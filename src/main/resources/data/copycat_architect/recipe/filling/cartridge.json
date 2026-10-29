@@ -1,0 +1,18 @@
+{
+  "type": "create:filling",
+  "ingredients": [
+    {
+      "item": "copycat_architect:empty_cartridge"
+    },
+    {
+      "type": "neoforge:single",
+      "amount": 256,
+      "fluid": "copycat_architect:molten_zinc"
+    }
+  ],
+  "results": [
+    {
+      "id": "copycat_architect:cartridge"
+    }
+  ]
+}

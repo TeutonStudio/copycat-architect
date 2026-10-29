@@ -1,0 +1,54 @@
+{
+  "schema": 3,
+  "id": "rotation_xor",
+  "version": 1,
+  "name": "Rotated slab symmetric difference",
+  "parts": [],
+  "groups": [
+    { "id": "body", "name": "Body", "role": "surface", "priority": 0 },
+    { "id": "cap", "name": "Rotated part", "role": "frame", "priority": 1 }
+  ],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "slab",
+        "kind": "INPUT",
+        "part": { "source": "copycats:copycat_slab" },
+        "x": 20,
+        "y": 20
+      },
+      {
+        "id": "angle",
+        "kind": "ROTATION",
+        "rotationAxis": "Z",
+        "quarterTurns": 1,
+        "x": 20,
+        "y": 180
+      },
+      {
+        "id": "rotate",
+        "kind": "ROTATE",
+        "inputs": ["slab", "angle"],
+        "x": 250,
+        "y": 150
+      },
+      {
+        "id": "xor",
+        "kind": "SYMMETRIC_DIFFERENCE",
+        "inputs": ["slab", "rotate"],
+        "materialMode": "SEPARATED",
+        "inputGroups": ["body", "cap"],
+        "x": 480,
+        "y": 20
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": ["xor"],
+        "x": 710,
+        "y": 20
+      }
+    ]
+  }
+}

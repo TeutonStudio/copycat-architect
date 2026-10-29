@@ -1,0 +1,125 @@
+{
+  "schema": 3,
+  "id": "graph_cut",
+  "version": 1,
+  "name": "Notched Copycat",
+  "parts": [],
+  "groups": [
+    {
+      "id": "body",
+      "name": "Body",
+      "role": "surface",
+      "priority": 0
+    }
+  ],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "in0",
+        "kind": "INPUT",
+        "inputs": [],
+        "part": {
+          "source": "copycats:copycat_block",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body",
+          "cutMask": "",
+          "recipeSource": ""
+        },
+        "x": 20,
+        "y": 20,
+        "materialMode": "SEPARATED",
+        "materialGroup": "",
+        "previewGroup": ""
+      },
+      {
+        "id": "in1",
+        "kind": "INPUT",
+        "inputs": [],
+        "part": {
+          "source": "copycats:copycat_vertical_slice",
+          "turn": 0,
+          "top": false,
+          "size": 3,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body",
+          "cutMask": "",
+          "recipeSource": ""
+        },
+        "x": 20,
+        "y": 185,
+        "materialMode": "SEPARATED",
+        "materialGroup": "",
+        "previewGroup": ""
+      },
+      {
+        "id": "op",
+        "kind": "DIFFERENCE",
+        "inputs": [
+          "in0",
+          "in1"
+        ],
+        "part": {
+          "source": "copycats:copycat_slice",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body",
+          "cutMask": "",
+          "recipeSource": ""
+        },
+        "x": 260,
+        "y": 65,
+        "materialMode": "SEPARATED",
+        "materialGroup": "",
+        "previewGroup": ""
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "op"
+        ],
+        "part": {
+          "source": "copycats:copycat_slice",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body",
+          "cutMask": "",
+          "recipeSource": ""
+        },
+        "x": 490,
+        "y": 65,
+        "materialMode": "SEPARATED",
+        "materialGroup": "",
+        "previewGroup": ""
+      }
+    ]
+  }
+}

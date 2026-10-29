@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "cartridges=1": {
+      "model": "copycat_architect:block/cartridge_stack_1"
+    },
+    "cartridges=2": {
+      "model": "copycat_architect:block/cartridge_stack_2"
+    },
+    "cartridges=3": {
+      "model": "copycat_architect:block/cartridge_stack_3"
+    },
+    "cartridges=4": {
+      "model": "copycat_architect:block/cartridge_stack_4"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    },
+    {
+      "tag": "c:nuggets/zinc"
+    }
+  ],
+  "results": [
+    {
+      "id": "copycat_architect:molten_zinc",
+      "amount": 256
+    }
+  ],
+  "heat_requirement": "heated"
+}

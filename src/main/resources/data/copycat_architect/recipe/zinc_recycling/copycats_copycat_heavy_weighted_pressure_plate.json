@@ -1,0 +1,15 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    {
+      "item": "copycats:copycat_heavy_weighted_pressure_plate"
+    }
+  ],
+  "results": [
+    {
+      "id": "copycat_architect:molten_zinc",
+      "amount": 128
+    }
+  ],
+  "heat_requirement": "heated"
+}

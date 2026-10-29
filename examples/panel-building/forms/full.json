@@ -1,0 +1,29 @@
+{
+  "schema": 3,
+  "id": "full",
+  "version": 1,
+  "name": "Vollblock",
+  "parts": [],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "block",
+        "part": {
+          "source": "copycats:copycat_block"
+        },
+        "x": 20,
+        "y": 0
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "block"
+        ],
+        "x": 700,
+        "y": 20
+      }
+    ]
+  }
+}

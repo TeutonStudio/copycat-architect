@@ -1,0 +1,509 @@
+{
+  "forms": {
+    "full@1": {
+      "schema": 2,
+      "id": "full",
+      "version": 1,
+      "name": "Full block",
+      "parts": [
+        {
+          "source": "copycats:copycat_block",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        }
+      ],
+      "groups": [
+        {
+          "id": "body",
+          "name": "Body",
+          "role": "surface",
+          "priority": 0
+        }
+      ]
+    },
+    "inner@1": {
+      "schema": 2,
+      "id": "inner",
+      "version": 1,
+      "name": "Inner trim corner",
+      "parts": [
+        {
+          "source": "copycats:copycat_slice",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        },
+        {
+          "source": "copycats:copycat_slice",
+          "turn": 1,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        }
+      ],
+      "groups": [
+        {
+          "id": "body",
+          "name": "Body",
+          "role": "surface",
+          "priority": 0
+        }
+      ]
+    },
+    "bar@1": {
+      "schema": 2,
+      "id": "bar",
+      "version": 1,
+      "name": "Straight trim",
+      "parts": [
+        {
+          "source": "copycats:copycat_slice",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        }
+      ],
+      "groups": [
+        {
+          "id": "body",
+          "name": "Body",
+          "role": "surface",
+          "priority": 0
+        }
+      ]
+    },
+    "stair@1": {
+      "schema": 2,
+      "id": "stair",
+      "version": 1,
+      "name": "Roof step",
+      "parts": [
+        {
+          "source": "copycats:copycat_stairs",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        }
+      ],
+      "groups": [
+        {
+          "id": "body",
+          "name": "Body",
+          "role": "surface",
+          "priority": 0
+        }
+      ]
+    },
+    "multi_material@1": {
+      "schema": 2,
+      "id": "multi_material",
+      "version": 1,
+      "name": "Two-material cap",
+      "parts": [
+        {
+          "source": "copycats:copycat_block",
+          "turn": 0,
+          "top": false,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "body"
+        },
+        {
+          "source": "copycats:copycat_layer",
+          "turn": 0,
+          "top": true,
+          "size": 1,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "tilt": 0,
+          "group": "cap"
+        }
+      ],
+      "groups": [
+        {
+          "id": "body",
+          "name": "Body",
+          "role": "surface",
+          "priority": 0
+        },
+        {
+          "id": "cap",
+          "name": "Cap",
+          "role": "frame",
+          "priority": 1
+        }
+      ]
+    }
+  },
+  "modules": {
+    "window@1": {
+      "schema": 1,
+      "id": "window",
+      "version": 1,
+      "name": "Window 3 × 4",
+      "width": 3,
+      "height": 4,
+      "depth": 1,
+      "cells": [
+        {
+          "pos": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 1,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 2,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 3,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 0,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 1,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": true,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 2,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": true,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 1,
+            "y": 3,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 0,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 1,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 2,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "frame",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        },
+        {
+          "pos": {
+            "x": 2,
+            "y": 3,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": false
+        }
+      ],
+      "minWidth": 3,
+      "maxWidth": 3
+    },
+    "pier@1": {
+      "schema": 1,
+      "id": "pier",
+      "version": 1,
+      "name": "Pier 1 × 4",
+      "width": 1,
+      "height": 4,
+      "depth": 1,
+      "cells": [
+        {
+          "pos": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": true
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 1,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": true
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 2,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": true
+        },
+        {
+          "pos": {
+            "x": 0,
+            "y": 3,
+            "z": 0
+          },
+          "form": "full@1",
+          "block": "",
+          "role": "wall",
+          "turn": 0,
+          "empty": false,
+          "flexible": true
+        }
+      ],
+      "minWidth": 1,
+      "maxWidth": 4
+    }
+  },
+  "buildings": {
+    "demo@1": {
+      "schema": 1,
+      "id": "demo",
+      "version": 1,
+      "name": "L House",
+      "wings": [
+        {
+          "x": 0,
+          "z": 0,
+          "width": 11,
+          "length": 9
+        },
+        {
+          "x": 0,
+          "z": 9,
+          "width": 5,
+          "length": 6
+        }
+      ],
+      "floors": 2,
+      "roomHeight": 4,
+      "patterns": [
+        {
+          "sequence": [
+            "window@1"
+          ],
+          "interlude": "pier@1",
+          "mode": 1,
+          "start": "",
+          "end": "",
+          "remainder": "END",
+          "filler": "pier@1",
+          "partial": false
+        },
+        {
+          "sequence": [
+            "window@1"
+          ],
+          "interlude": "pier@1",
+          "mode": 1,
+          "start": "",
+          "end": "",
+          "remainder": "END",
+          "filler": "pier@1",
+          "partial": false
+        },
+        {
+          "sequence": [
+            "window@1"
+          ],
+          "interlude": "pier@1",
+          "mode": 1,
+          "start": "",
+          "end": "",
+          "remainder": "END",
+          "filler": "pier@1",
+          "partial": false
+        },
+        {
+          "sequence": [
+            "window@1"
+          ],
+          "interlude": "pier@1",
+          "mode": 1,
+          "start": "",
+          "end": "",
+          "remainder": "END",
+          "filler": "pier@1",
+          "partial": false
+        }
+      ],
+      "floorForm": "full@1",
+      "ceilingForm": "full@1",
+      "floorThickness": 1,
+      "ceilingThickness": 1,
+      "holes": [],
+      "roof": "gable",
+      "ridge": 0,
+      "overhang": 1,
+      "roofThickness": 1,
+      "trimForm": "inner@1",
+      "palette": {
+        "wall": "minecraft:stone_bricks",
+        "frame": "minecraft:oak_planks",
+        "glass": "minecraft:glass",
+        "roof": "minecraft:deepslate_tiles",
+        "gable": "minecraft:stone_bricks",
+        "trim": "minecraft:oak_planks"
+      }
+    }
+  }
+}

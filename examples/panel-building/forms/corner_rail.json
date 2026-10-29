@@ -1,0 +1,29 @@
+{
+  "schema": 3,
+  "id": "corner_rail",
+  "version": 1,
+  "name": "Senkrechte Eckleiste 2x2-16",
+  "parts": [],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "rail",
+        "part": {
+          "source": "copycats:copycat_vertical_slice"
+        },
+        "x": 20,
+        "y": 0
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "rail"
+        ],
+        "x": 700,
+        "y": 20
+      }
+    ]
+  }
+}

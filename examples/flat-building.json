@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "id": "demo",
+  "version": 1,
+  "name": "L House",
+  "wings": [
+    {
+      "x": 0,
+      "z": 0,
+      "width": 11,
+      "length": 9
+    }
+  ],
+  "floors": 2,
+  "roomHeight": 4,
+  "patterns": [
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    }
+  ],
+  "floorForm": "full@1",
+  "ceilingForm": "full@1",
+  "floorThickness": 1,
+  "ceilingThickness": 1,
+  "holes": [],
+  "roof": "flat",
+  "ridge": 0,
+  "overhang": 1,
+  "roofThickness": 1,
+  "trimForm": "inner@1",
+  "palette": {
+    "wall": "minecraft:stone_bricks",
+    "frame": "minecraft:oak_planks",
+    "glass": "minecraft:glass",
+    "roof": "minecraft:deepslate_tiles",
+    "gable": "minecraft:stone_bricks",
+    "trim": "minecraft:oak_planks"
+  }
+}

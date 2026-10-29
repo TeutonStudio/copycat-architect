@@ -1,0 +1,74 @@
+{
+  "schema": 3,
+  "id": "panel_lower",
+  "version": 1,
+  "name": "Panel mit unterer Kantenleiste",
+  "parts": [],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "panel",
+        "part": {
+          "source": "create:copycat_panel"
+        },
+        "x": 20,
+        "y": 0
+      },
+      {
+        "id": "panel_rotate",
+        "kind": "ROTATE",
+        "inputs": [
+          "panel",
+          ""
+        ],
+        "x": 230,
+        "y": 0,
+        "rotationAxis": "X",
+        "quarterTurns": 3
+      },
+      {
+        "id": "rail",
+        "part": {
+          "source": "copycats:copycat_slice",
+          "group": "trim"
+        },
+        "x": 20,
+        "y": 150
+      },
+      {
+        "id": "join",
+        "kind": "UNION",
+        "inputs": [
+          "panel_rotate",
+          "rail"
+        ],
+        "x": 470,
+        "y": 20
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "join"
+        ],
+        "x": 700,
+        "y": 20
+      }
+    ]
+  },
+  "groups": [
+    {
+      "id": "body",
+      "name": "Body",
+      "role": "surface",
+      "priority": 0
+    },
+    {
+      "id": "trim",
+      "name": "Leisten",
+      "role": "trim",
+      "priority": 1
+    }
+  ]
+}

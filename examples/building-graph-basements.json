@@ -1,0 +1,430 @@
+{
+  "schema": 2,
+  "id": "building_graph_basements",
+  "version": 1,
+  "name": "Rooms, basement and nested walls",
+  "wings": [
+    {
+      "x": 0,
+      "z": 0,
+      "width": 11,
+      "length": 9
+    },
+    {
+      "x": 0,
+      "z": 9,
+      "width": 5,
+      "length": 6
+    }
+  ],
+  "floors": 2,
+  "roomHeight": 4,
+  "patterns": [
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    },
+    {
+      "sequence": [
+        "window@1"
+      ],
+      "interlude": "pier@1",
+      "mode": 1,
+      "start": "",
+      "end": "",
+      "remainder": "END",
+      "filler": "pier@1",
+      "partial": false
+    }
+  ],
+  "floorForm": "full@1",
+  "ceilingForm": "full@1",
+  "floorThickness": 1,
+  "ceilingThickness": 1,
+  "holes": [],
+  "roof": "gable",
+  "ridge": 0,
+  "overhang": 1,
+  "roofThickness": 1,
+  "trimForm": "inner@1",
+  "palette": {
+    "wall": "minecraft:stone",
+    "frame": "minecraft:stone",
+    "glass": "minecraft:stone",
+    "roof": "minecraft:stone",
+    "gable": "minecraft:stone",
+    "trim": "minecraft:stone"
+  },
+  "graph": {
+    "schema": 1,
+    "nodes": [
+      {
+        "id": "empty_wall",
+        "kind": "SEGMENT",
+        "name": "Empty wall",
+        "x": 20,
+        "y": 20,
+        "inputs": [],
+        "module": "window@1",
+        "block": "minecraft:air",
+        "length": 1,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "wall",
+        "kind": "PATTERN",
+        "name": "A + BC",
+        "x": 540,
+        "y": 70,
+        "inputs": [
+          "unit",
+          "BC"
+        ],
+        "module": "",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "floor",
+        "kind": "FLOOR",
+        "name": "Floor",
+        "x": 20,
+        "y": 450,
+        "inputs": [],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 2,
+        "occupied": true,
+        "finish": "minecraft:white_carpet",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "ceiling",
+        "kind": "CEILING",
+        "name": "Ceiling",
+        "x": 20,
+        "y": 630,
+        "inputs": [],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "room",
+        "kind": "ROOM",
+        "name": "Room",
+        "x": 830,
+        "y": 70,
+        "inputs": [],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {
+          "0:0:0": "wall",
+          "1:2:0": "wall",
+          "2:2:2": "wall",
+          "3:0:2": "wall"
+        },
+        "floor": "floor",
+        "ceiling": "ceiling",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "storey",
+        "kind": "STOREY",
+        "name": "Storey",
+        "x": 1160,
+        "y": 70,
+        "inputs": [
+          "room",
+          "room"
+        ],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [
+          {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          {
+            "x": 4,
+            "y": 0,
+            "z": 0
+          }
+        ],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "roof",
+        "kind": "ROOF",
+        "name": "Roof",
+        "x": 1160,
+        "y": 590,
+        "inputs": [],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {},
+        "roof": "",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "roof",
+        "preview": "all"
+      },
+      {
+        "id": "building",
+        "kind": "BUILDING",
+        "name": "Building",
+        "x": 1500,
+        "y": 90,
+        "inputs": [],
+        "module": "window@1",
+        "block": "",
+        "length": 3,
+        "height": 4,
+        "rectangles": [
+          {
+            "x": 0,
+            "z": 0,
+            "width": 3,
+            "length": 3
+          }
+        ],
+        "walls": {},
+        "floor": "",
+        "ceiling": "",
+        "offsets": [],
+        "form": "full@1",
+        "thickness": 1,
+        "occupied": false,
+        "finish": "",
+        "levels": {
+          "-1": "storey",
+          "0": "storey",
+          "1": "storey"
+        },
+        "roof": "roof",
+        "roofType": "flat",
+        "ridge": 0,
+        "overhang": 0,
+        "materialMode": "SEPARATED",
+        "role": "wall",
+        "preview": "all"
+      },
+      {
+        "id": "unit",
+        "kind": "SEGMENT",
+        "name": "A",
+        "x": 20,
+        "y": 180,
+        "module": "",
+        "length": 1,
+        "height": 4
+      },
+      {
+        "id": "BC",
+        "kind": "PATTERN",
+        "name": "BC",
+        "x": 290,
+        "y": 70,
+        "inputs": [
+          "unit",
+          "unit"
+        ]
+      }
+    ]
+  }
+}

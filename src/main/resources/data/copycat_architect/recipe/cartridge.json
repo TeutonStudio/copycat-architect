@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "PZP"
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:paper"
+    },
+    "Z": {
+      "item": "create:zinc_ingot"
+    }
+  },
+  "result": {
+    "id": "copycat_architect:cartridge",
+    "count": 1
+  }
+}

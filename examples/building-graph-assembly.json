@@ -1,0 +1,120 @@
+{
+  "schema": 2,
+  "name": "Copycat Assembly House",
+  "graph": {
+    "schema": 1,
+    "nodes": [
+      {
+        "id": "empty_wall",
+        "kind": "SEGMENT",
+        "name": "Empty wall",
+        "x": 20,
+        "y": 20,
+        "block": "minecraft:air",
+        "length": 1
+      },
+      {
+        "id": "wall_copycat",
+        "kind": "COPYCAT",
+        "name": "Wall Copycat",
+        "x": 20,
+        "y": 200
+      },
+      {
+        "id": "roof_copycat",
+        "kind": "COPYCAT",
+        "name": "Roof Copycat",
+        "x": 20,
+        "y": 550,
+        "role": "roof"
+      },
+      {
+        "id": "wall",
+        "kind": "SEGMENT",
+        "name": "Wall segment",
+        "x": 290,
+        "y": 30,
+        "inputs": [
+          "wall_copycat"
+        ],
+        "module": ""
+      },
+      {
+        "id": "floor",
+        "kind": "FLOOR",
+        "name": "Floor",
+        "x": 290,
+        "y": 220,
+        "inputs": [
+          "wall_copycat"
+        ]
+      },
+      {
+        "id": "ceiling",
+        "kind": "CEILING",
+        "name": "Ceiling",
+        "x": 290,
+        "y": 440,
+        "inputs": [
+          "wall_copycat"
+        ]
+      },
+      {
+        "id": "gable_wall",
+        "kind": "SEGMENT",
+        "name": "Gable segment",
+        "x": 290,
+        "y": 660,
+        "inputs": [
+          "wall_copycat"
+        ],
+        "module": "",
+        "length": 5,
+        "height": 2
+      },
+      {
+        "id": "storey",
+        "kind": "STOREY",
+        "name": "Storey",
+        "x": 600,
+        "y": 30,
+        "walls": {
+          "0:0:0": "wall",
+          "1:2:0": "wall",
+          "2:2:2": "wall",
+          "3:0:2": "wall"
+        },
+        "floor": "floor",
+        "ceiling": "ceiling",
+        "storeyMode": "walls"
+      },
+      {
+        "id": "roof",
+        "kind": "ROOF",
+        "name": "Roof",
+        "x": 600,
+        "y": 560,
+        "inputs": [
+          "roof_copycat"
+        ],
+        "walls": {
+          "0": "gable_wall",
+          "2": "gable_wall"
+        },
+        "roofType": "gable",
+        "role": "roof"
+      },
+      {
+        "id": "building",
+        "kind": "BUILDING",
+        "name": "Building",
+        "x": 970,
+        "y": 100,
+        "levels": {
+          "0": "storey"
+        },
+        "roof": "roof"
+      }
+    ]
+  }
+}

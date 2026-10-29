@@ -1,0 +1,89 @@
+{
+  "schema": 3,
+  "id": "material_branches",
+  "version": 1,
+  "name": "Two-material split",
+  "parts": [],
+  "groups": [
+    {
+      "id": "body",
+      "name": "Stone",
+      "role": "surface",
+      "priority": 0
+    },
+    {
+      "id": "cap",
+      "name": "Wood",
+      "role": "frame",
+      "priority": 1
+    }
+  ],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "source",
+        "kind": "INPUT",
+        "part": {
+          "source": "copycats:copycat_block"
+        },
+        "x": 20,
+        "y": 20
+      },
+      {
+        "id": "mask",
+        "kind": "INPUT",
+        "part": {
+          "source": "copycats:copycat_slab"
+        },
+        "x": 20,
+        "y": 185
+      },
+      {
+        "id": "top",
+        "kind": "DIFFERENCE",
+        "inputs": [
+          "source",
+          "mask"
+        ],
+        "x": 250,
+        "y": 20
+      },
+      {
+        "id": "bottom",
+        "kind": "INTERSECTION",
+        "inputs": [
+          "source",
+          "mask"
+        ],
+        "x": 250,
+        "y": 220
+      },
+      {
+        "id": "join",
+        "kind": "UNION",
+        "inputs": [
+          "top",
+          "bottom"
+        ],
+        "materialMode": "SEPARATED",
+        "inputGroups": [
+          "body",
+          "cap"
+        ],
+        "x": 475,
+        "y": 110
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "join"
+        ],
+        "previewGroup": "",
+        "x": 700,
+        "y": 80
+      }
+    ]
+  }
+}

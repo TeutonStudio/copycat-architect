@@ -1,0 +1,21 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    {
+      "item": "copycats:copycat_ladder"
+    },
+    {
+      "item": "copycats:copycat_ladder"
+    },
+    {
+      "item": "copycats:copycat_ladder"
+    }
+  ],
+  "results": [
+    {
+      "id": "copycat_architect:molten_zinc",
+      "amount": 128
+    }
+  ],
+  "heat_requirement": "heated"
+}

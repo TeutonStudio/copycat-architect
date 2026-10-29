@@ -1,0 +1,41 @@
+{
+  "schema": 3,
+  "id": "panel_wall",
+  "version": 1,
+  "name": "Panelwand 3-16",
+  "parts": [],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "panel",
+        "part": {
+          "source": "create:copycat_panel"
+        },
+        "x": 20,
+        "y": 0
+      },
+      {
+        "id": "panel_rotate",
+        "kind": "ROTATE",
+        "inputs": [
+          "panel",
+          ""
+        ],
+        "x": 230,
+        "y": 0,
+        "rotationAxis": "X",
+        "quarterTurns": 3
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "panel_rotate"
+        ],
+        "x": 700,
+        "y": 20
+      }
+    ]
+  }
+}

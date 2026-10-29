@@ -1,0 +1,118 @@
+{
+  "schema": 3,
+  "id": "layer_window",
+  "version": 1,
+  "name": "Schichtfenster 2-16 mit Leistenrahmen",
+  "parts": [],
+  "graph": {
+    "schema": 2,
+    "nodes": [
+      {
+        "id": "glass",
+        "part": {
+          "source": "copycats:copycat_layer",
+          "group": "glass"
+        },
+        "x": 20,
+        "y": 0
+      },
+      {
+        "id": "glass_rotate",
+        "kind": "ROTATE",
+        "inputs": [
+          "glass",
+          ""
+        ],
+        "x": 230,
+        "y": 0,
+        "rotationAxis": "X",
+        "quarterTurns": 3
+      },
+      {
+        "id": "lower",
+        "part": {
+          "source": "copycats:copycat_slice",
+          "group": "trim"
+        },
+        "x": 20,
+        "y": 150
+      },
+      {
+        "id": "upper",
+        "part": {
+          "source": "copycats:copycat_slice",
+          "group": "trim",
+          "top": true
+        },
+        "x": 20,
+        "y": 300
+      },
+      {
+        "id": "right",
+        "part": {
+          "source": "copycats:copycat_vertical_slice",
+          "group": "trim"
+        },
+        "x": 20,
+        "y": 450
+      },
+      {
+        "id": "left",
+        "part": {
+          "source": "copycats:copycat_vertical_slice",
+          "group": "trim"
+        },
+        "x": 20,
+        "y": 600
+      },
+      {
+        "id": "left_rotate",
+        "kind": "ROTATE",
+        "inputs": [
+          "left",
+          ""
+        ],
+        "x": 230,
+        "y": 600,
+        "rotationAxis": "Y",
+        "quarterTurns": 1
+      },
+      {
+        "id": "join",
+        "kind": "UNION",
+        "inputs": [
+          "glass_rotate",
+          "lower",
+          "upper",
+          "right",
+          "left_rotate"
+        ],
+        "x": 470,
+        "y": 20
+      },
+      {
+        "id": "result",
+        "kind": "OUTPUT",
+        "inputs": [
+          "join"
+        ],
+        "x": 700,
+        "y": 20
+      }
+    ]
+  },
+  "groups": [
+    {
+      "id": "glass",
+      "name": "Glas",
+      "role": "glass",
+      "priority": 0
+    },
+    {
+      "id": "trim",
+      "name": "Fensterrahmen",
+      "role": "trim",
+      "priority": 1
+    }
+  ]
+}

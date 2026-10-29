@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "units_per_ingot": 256,
+  "outputs": {
+    "copycats:copycat_block": 1,
+    "copycats:copycat_slab": 2,
+    "copycats:copycat_stairs": 1,
+    "create:copycat_panel": 4,
+    "copycats:copycat_slice": 16,
+    "copycats:copycat_vertical_slice": 16,
+    "copycats:copycat_corner_slice": 16,
+    "copycats:copycat_layer": 8,
+    "copycats:copycat_beam": 4,
+    "copycats:copycat_byte": 8,
+    "create:copycat_step": 4,
+    "copycats:copycat_vertical_step": 4,
+    "copycats:copycat_half_panel": 8,
+    "copycats:copycat_flat_pane": 8,
+    "copycats:copycat_byte_panel": 16,
+    "copycats:copycat_half_layer": 16,
+    "copycats:copycat_vertical_half_layer": 16,
+    "copycats:copycat_stacked_half_layer": 16
+  }
+}

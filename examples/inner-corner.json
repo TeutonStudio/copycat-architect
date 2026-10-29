@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "id": "inner",
+  "version": 1,
+  "name": "Inner trim corner",
+  "parts": [
+    {
+      "source": "copycats:copycat_slice",
+      "turn": 0,
+      "top": false,
+      "size": 1,
+      "offset": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "tilt": 0,
+      "group": "body"
+    },
+    {
+      "source": "copycats:copycat_slice",
+      "turn": 1,
+      "top": false,
+      "size": 1,
+      "offset": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "tilt": 0,
+      "group": "body"
+    }
+  ],
+  "groups": [
+    {
+      "id": "body",
+      "name": "Body",
+      "role": "surface",
+      "priority": 0
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "id": "panel_edge",
+  "version": 1,
+  "name": "Panelspalte",
+  "width": 1,
+  "height": 4,
+  "depth": 1,
+  "minWidth": 1,
+  "maxWidth": 1,
+  "cells": [
+    {
+      "pos": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "form": "panel_lower@1"
+    },
+    {
+      "pos": {
+        "x": 0,
+        "y": 1,
+        "z": 0
+      },
+      "form": "panel_wall@1"
+    },
+    {
+      "pos": {
+        "x": 0,
+        "y": 2,
+        "z": 0
+      },
+      "form": "panel_wall@1"
+    },
+    {
+      "pos": {
+        "x": 0,
+        "y": 3,
+        "z": 0
+      },
+      "form": "panel_upper@1"
+    }
+  ]
+}
