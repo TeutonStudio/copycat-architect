@@ -79,7 +79,8 @@ export function createCopycatPreviewClient({
       if (disposed) return Promise.reject(abortError())
       let key, snapshot
       try {
-        const data = { document: option.document, materials: option.materials || {} }
+        const data = { document: option.document, materials: option.materials || {},
+          ...(option.referenceOption ? { referenceOption:true, library:option.library, output:option.output } : {}) }
         key = JSON.stringify(data)
         if (cache.has(key)) {
           const plan = cache.get(key)

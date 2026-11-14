@@ -2,6 +2,6 @@
 /dist/
 /src/generated/
 
-/.tools/
+/.tools
 
 /public/compatibility.json

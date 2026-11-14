@@ -16,11 +16,12 @@ export const names = {
   COPYCAT_UNION: 'Copycat-Vereinigung', COPYCAT_INTERSECTION: 'Copycat-Schnitt', COPYCAT_DIFFERENCE: 'Copycat-Differenz', COPYCAT_SYMMETRIC_DIFFERENCE: 'Symmetrische Copycat-Differenz',
   SEGMENT_MIRROR: 'Segment spiegeln', SEGMENT_ROTATE: 'Segment rotieren',
   SEGMENT_UNION: 'Segment-Vereinigung', SEGMENT_INTERSECTION: 'Segment-Schnitt', SEGMENT_DIFFERENCE: 'Segment-Differenz', SEGMENT_SYMMETRIC_DIFFERENCE: 'Symmetrische Segment-Differenz',
-  COPYCAT: 'Copycat-Referenz', SEGMENT: 'Wandsegment', PATTERN: 'Wandmuster', FLOOR: 'Boden', CEILING: 'Decke',
+  REFERENCE: 'Referenz', COPYCAT: 'Referenz', SEGMENT: 'Wandsegment', PATTERN: 'Wandmuster', FLOOR: 'Boden', CEILING: 'Decke',
   ROOM: 'Raum', STOREY: 'Geschoss', ROOF: 'Dach', BUILDING: 'Gebäude'
 }
 
 export function portName(port, node) {
+  if (port.name) return port.name
   const native = { length: 'Länge (Y)', roofPeak: 'Dachspitze (optional)', roofEave: 'Dachendkante / Traufe (optional)', layout: 'Anordnung', geometry: 'Grundriss', area: 'Fläche', tread: 'Stufen', landing: 'Podest', enclosure: 'Schachtwände' }
   if (native[port.id]) return native[port.id]
   if (port.id.startsWith('region:')) return `Bereich ${port.id.slice(7)}`
@@ -101,8 +102,8 @@ export function NodeFields({ mode, node, document, edit, library, onChooseCopyca
   const source = model.shapes.find(shape => shape.id === node.part?.source)
   const sourceName = node.kind === 'INPUT' ? copycatShapeNames[source?.name] || source?.name
     : node.kind === 'SAVED' ? node.savedCopycat?.name : library.forms?.[node.form]?.name || node.form
-  const copycatPicker = <button type="button" className="copycat-source-button" aria-label="Copycat auswählen" onClick={onChooseCopycat}>
-    <span>Copycat auswählen …</span><small>{sourceName || 'Grundform oder gespeicherte Form'}</small>
+  const copycatPicker = <button type="button" className="copycat-source-button" aria-label={mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'} onClick={onChooseCopycat}>
+    <span>{mode === 'building' ? 'Referenz auswählen …' : 'Copycat auswählen …'}</span><small>{sourceName || 'Grundform oder gespeicherte Form'}</small>
   </button>
   if (mode === 'form') {
     const part = node.part

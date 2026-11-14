@@ -1,12 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Viewer } from './Preview.jsx'
 import { useWorkspace } from './Workspace.jsx'
-import { listCopycatOptions } from './copycat-options.js'
+import { listReferenceOptions, prepareReferenceOption } from './reference-options.js'
+import { usePageSize } from './PagedPanel.jsx'
 import { createCopycatPreviewClient } from './copycat-preview-client.js'
 import { createCopycatThumbnailRenderer } from './copycat-thumbnails.js'
 
-const sources = { empty: 'Grundform', base: 'Grundform', saved: 'Meine gespeicherten Formen', library: 'Formbibliothek' }
-const categories = [['basic', 'Grundformen'], ['saved', 'Gespeicherte Formen']]
+const sources = { graph: 'Gespeicherter Graph', group: 'Gruppe / Karte', template: 'Architekturvorlage', empty: 'Grundform', base: 'Grundform', saved: 'Meine gespeicherten Formen', library: 'Formbibliothek' }
+const categories = [['all', 'Alle Quellen'], ['basic', 'Grundformen'], ['saved', 'Gespeicherte Formen'], ['graphs', 'Graphen'], ['groups', 'Gruppen / Karten'], ['templates', 'Vorlagen']]
 
 function createPreviews() {
   const client = createCopycatPreviewClient()
@@ -65,7 +66,7 @@ function ShapeCard({ option, selected, previews, onSelect }) {
     <span className="copycat-thumbnail" aria-hidden="true">
       {thumbnail?.image ? <img src={thumbnail.image} alt="" draggable="false" />
         : <span className={thumbnail?.error ? 'error' : ''} title={thumbnail?.error}>
-          {thumbnail?.error ? 'Vorschau nicht verfügbar' : 'Vorschau …'}
+          {thumbnail?.error ? 'Vorschau nicht verfügbar' : previews ? 'Vorschau …' : sources[option.kind]}
         </span>}
       {selected && <span className="copycat-check">✓</span>}
     </span>
@@ -74,23 +75,36 @@ function ShapeCard({ option, selected, previews, onSelect }) {
   </button>
 }
 
-export default function CopycatPicker({ mode, savedForms, library, initialId, initialCategory = 'basic', onChoose, onClose }) {
+export default function CopycatPicker({ mode, savedForms, savedGraphs, savedGroups, library, initialId, initialCategory = 'all', onChoose, onClose }) {
   const { catalog } = useWorkspace()
   const dialog = useRef(null)
   const id = useId()
   const [category, setCategory] = useState(initialCategory)
   const [query, setQuery] = useState('')
-  const [limit, setLimit] = useState(48)
+  const [page, setPage] = useState(0)
+  const [path, setPath] = useState([])
+  const [output, setOutput] = useState('')
+  const [detailTab, setDetailTab] = useState('catalog')
+  const [listRef, pageSize] = usePageSize(145, 150)
+  const setLimit = () => setPage(0)
   const [chosenId, setChosenId] = useState(initialId || null)
   const [previews, setPreviews] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [applying, setApplying] = useState(false)
-  const options = useMemo(() => listCopycatOptions({ savedForms, library }), [savedForms, library])
-  const chosen = options.find(option => option.id === chosenId)
+  const options = useMemo(() => listReferenceOptions({ mode, savedForms, savedGraphs, savedGroups, library }), [mode, savedForms, savedGraphs, savedGroups, library])
+  const rawChosen = options.find(option => option.id === chosenId)
+  const prepared = useMemo(() => { try { return { option: rawChosen && prepareReferenceOption(rawChosen, output) } } catch(error) { return { error:error.message } } }, [rawChosen, output])
+  const chosen = prepared.option
   const words = query.toLocaleLowerCase('de').trim().split(/\s+/).filter(Boolean)
-  const filtered = options.filter(option => option.category === category && words.every(word =>
-    `${option.name} ${option.source || ''} ${option.reference || ''} ${sources[option.kind]}`.toLocaleLowerCase('de').includes(word)))
+  const filtered = options.filter(option => (category === 'all' || option.category === category) && words.every(word =>
+    `${option.name} ${option.source || ''} ${option.reference || ''}`.toLocaleLowerCase('de').includes(word)))
+  const inFolder = filtered.filter(option => query || option.path.slice(0, path.length).join('/') === path.join('/'))
+  const folders = query ? [] : [...new Set(inFolder.filter(o => o.path.length > path.length + 1).map(o => o.path[path.length]))]
+  const leaves = inFolder.filter(o => query || o.path.length === path.length + 1)
+  const items = [...folders.map(folder => ({ folder })), ...leaves]
+  const pages = Math.max(1, Math.ceil(items.length / pageSize))
+  const shown = items.slice(Math.min(page, pages - 1) * pageSize, (Math.min(page, pages - 1) + 1) * pageSize)
   const ready = result?.option === chosen && result?.plan
   const previewError = result?.option === chosen && result?.error
 
@@ -122,7 +136,7 @@ export default function CopycatPicker({ mode, savedForms, library, initialId, in
   }, [chosen, previews])
 
   const switchCategory = next => {
-    setCategory(next); setQuery(''); setLimit(48); setChosenId(null); setError('')
+    setCategory(next); setPath([]); setQuery(''); setPage(0); setChosenId(null); setError(''); setOutput('')
   }
   const choose = async () => {
     if (!chosen || !ready || applying) return
@@ -143,52 +157,37 @@ export default function CopycatPicker({ mode, savedForms, library, initialId, in
     }
   }
 
-  return <dialog ref={dialog} className="copycat-dialog" aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}
+  return <dialog ref={dialog} className="copycat-dialog" data-detail={detailTab} aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`}
     onCancel={event => { event.preventDefault(); if (!applying) onClose() }} onKeyDown={keydown}>
     <div className="copycat-dialog-layout">
       <header className="copycat-dialog-heading">
-        <div><span className="copycat-eyebrow">COPYCAT-BIBLIOTHEK</span><h2 id={`${id}-title`}>Copycat auswählen</h2>
-          <p id={`${id}-description`}>Form ansehen und mit „Auswahl übernehmen“ in den Graphen einsetzen.</p></div>
+        <div><span className="copycat-eyebrow">REFERENZBIBLIOTHEK</span><h2 id={`${id}-title`}>{mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'}</h2>
+          <p id={`${id}-description`}>Quelle ansehen und mit „Auswahl übernehmen“ in den Graphen einsetzen.</p></div>
         <button type="button" aria-label="Auswahl schließen" disabled={applying} onClick={onClose}>×</button>
       </header>
+      <nav className="reference-view-tabs"><button aria-pressed={detailTab === 'catalog'} onClick={() => setDetailTab('catalog')}>Bibliothek</button><button aria-pressed={detailTab === 'preview'} onClick={() => setDetailTab('preview')}>Vorschau</button></nav>
       <div className="copycat-dialog-body">
         <section className="copycat-catalog" aria-label="Verfügbare Copycats">
-          <div className="copycat-tabs" role="tablist" aria-label="Formenquelle">
-            {categories.map(([value, label], index) => <button key={value} type="button" role="tab"
-              id={`${id}-tab-${value}`} aria-controls={`${id}-forms`} aria-selected={category === value}
-              tabIndex={category === value ? 0 : -1} onClick={() => switchCategory(value)}
-              onKeyDown={event => {
-                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-                event.preventDefault()
-                const target = event.key === 'Home' ? 0 : event.key === 'End' ? categories.length - 1
-                  : (index + (event.key === 'ArrowRight' ? 1 : -1) + categories.length) % categories.length
-                switchCategory(categories[target][0])
-                document.getElementById(`${id}-tab-${categories[target][0]}`)?.focus()
-              }}>{label}<span aria-hidden="true">{options.filter(option => option.category === value).length}</span></button>)}
-          </div>
-          <label className="copycat-search">Formen suchen<input type="search" autoFocus autoComplete="off"
+          <div className="reference-navigation"><select aria-label="Quellenart" value={category} onChange={e => switchCategory(e.target.value)}>{categories.map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+            <button disabled={!path.length} onClick={() => {setPath(path.slice(0,-1));setPage(0)}} aria-label="Übergeordneter Ordner">↑</button><span title={path.join(' / ')}>{path.join(' / ') || 'Bibliothek'}</span></div>
+          <label className="copycat-search">Quellen suchen<input type="search" autoFocus autoComplete="off"
             placeholder={category === 'basic' ? 'z. B. Treppe, Stufe oder Panel' : 'Name oder Bibliotheksreferenz'}
             value={query} onChange={event => { setQuery(event.target.value); setLimit(48); setChosenId(null); setError('') }} /></label>
-          <div className="copycat-results" id={`${id}-forms`} role="tabpanel" aria-labelledby={`${id}-tab-${category}`}>
-            <p className="copycat-result-count" role="status">{filtered.length} {filtered.length === 1 ? 'Form' : 'Formen'}
-              {category === 'saved' && ' · Persönliche Auswahl und geladene Formbibliothek'}</p>
-            {filtered.length ? <>
-              <div className="copycat-grid">{filtered.slice(0, limit).map(option => <ShapeCard key={option.id}
-                option={option} selected={option.id === chosenId} previews={previews} onSelect={setChosenId} />)}</div>
-              {filtered.length > limit && <button className="copycat-more" type="button" onClick={() => setLimit(limit + 48)}>Weitere Formen anzeigen</button>}
-            </> : <div className="copycat-empty">
-              <strong>{query ? 'Keine passende Form gefunden' : 'Noch keine gespeicherten Formen'}</strong>
-              <p>{query ? 'Versuche einen anderen Namen oder lösche die Suche.'
-                : 'Speichere einen Formgraphen mit „Graph speichern“ oder lade eine Formbibliothek.'}</p>
-            </div>}
+          <div className="copycat-results" ref={listRef} id={`${id}-forms`}>
+            <div className="copycat-grid">{shown.map(option => option.folder ? <button type="button" className="copycat-card folder-card" key={`folder:${option.folder}`} onClick={() => {setPath([...path, option.folder]);setPage(0)}}><span aria-hidden="true">▣</span><strong>{option.folder}</strong><small>Ordner öffnen</small></button>
+              : <ShapeCard key={option.id} option={{...option,name:option.path.at(-1)}} selected={option.id === chosenId} previews={['graph','group','template'].includes(option.kind) ? null : previews} onSelect={value => {setChosenId(value);setOutput('');setError('')}} />)}</div>
+            {!items.length && <p className="hint">Keine passende Quelle gefunden.</p>}
           </div>
+          <nav className="page-controls" aria-label="Bibliotheksseiten"><button disabled={!page} onClick={() => setPage(page-1)}>←</button><span>{Math.min(page+1,pages)} / {pages}</span><button disabled={page+1>=pages} onClick={() => setPage(page+1)}>→</button></nav>
         </section>
         <section className={`copycat-detail${chosen ? '' : ' is-empty'}`} aria-label="Vorschau der Auswahl" aria-busy={Boolean(chosen && !ready && !previewError)}>
+          {prepared.error && <p className="error" role="alert">{prepared.error}</p>}
+          {chosen?.referenceOption && <label className="reference-output">Ergebnisausgang<select aria-label="Ergebnisausgang" value={chosen.output} onChange={e => setOutput(e.target.value)}>{chosen.outputs.map(entry => <option key={entry.node.id} value={entry.node.id}>{entry.node.name || entry.node.kind} · {entry.outputType}</option>)}</select></label>}
           {chosen &&
             <div className="copycat-detail-heading"><span className="copycat-eyebrow">{sources[chosen.kind]}</span><h3>{chosen.name}</h3>
               {chosen.reference && <p>{chosen.reference}</p>}</div>}
           <div className={`copycat-preview-stage${ready ? '' : ' is-pending'}`}>
-            <Viewer plan={ready || null} blockFrame catalog={catalog} />
+            <Viewer plan={ready || null} blockFrame={!chosen?.referenceOption} catalog={catalog} />
             {!ready && <div className="copycat-preview-placeholder" role="status">{chosen
               ? previewError ? <p className="error">Diese Form kann nicht geladen werden: {previewError}</p> : <p>3D-Vorschau wird berechnet …</p>
               : <><span className="copycat-placeholder-symbol" aria-hidden="true">◇</span>
@@ -197,7 +196,7 @@ export default function CopycatPicker({ mode, savedForms, library, initialId, in
           </div>
           {chosen &&
             <div className="copycat-detail-info">
-              <p>{ready ? `${ready.count.toLocaleString('de-DE')} belegte Rasterzellen` : 'Vorschau der gewählten Form'} · Rahmen: 16 hB</p>
+              <p>{chosen.referenceOption ? `${chosen.type} · Version ${chosen.version}` : 'Copycat · 16 hB'}{ready ? ` · ${ready.count.toLocaleString('de-DE')} Rasterzellen` : ''}</p>
               <p>Ziehen zum Drehen · Scrollen zum Zoomen</p>
               {chosen.kind === 'base' ? <p>Grundformen werden in Standardausrichtung eingesetzt. {mode === 'form'
                 ? 'Größe und Ausrichtung lassen sich danach im Inspektor ändern.'
@@ -208,7 +207,7 @@ export default function CopycatPicker({ mode, savedForms, library, initialId, in
       </div>
       <footer className="copycat-dialog-footer">
         <div className="copycat-selection-status" role="status">{error ? <span className="error">{error}</span>
-          : chosen ? <><strong>{chosen.name}</strong><span> zur Übernahme ausgewählt</span></> : 'Noch keine Form ausgewählt'}</div>
+          : chosen ? <><strong>{chosen.name}</strong><span> zur Übernahme ausgewählt</span></> : 'Noch keine Quelle ausgewählt'}</div>
         <div className="button-row"><button type="button" disabled={applying} onClick={onClose}>Abbrechen</button>
           <button type="button" className="primary" disabled={!ready || applying} onClick={choose}>{applying ? 'Wird übernommen …' : 'Auswahl übernehmen'}</button></div>
       </footer>

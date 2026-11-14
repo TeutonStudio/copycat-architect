@@ -12,6 +12,8 @@ import { Workspace, useWorkspace } from './Workspace.jsx'
 import { loadBuildingCopycat, loadFormCopycatWithMaterials } from './copycat-library.js'
 import { applyCopycatOption } from './copycat-selection.js'
 import { insertNodeGroup, mergeLibraries, saveNodeGroup } from './node-groups.js'
+import { applyReference, hasReferences, expandReferences, foldReferenceEdit, instanceOverrides, copycatFromReference } from './references.js'
+import { PagedPanel } from './PagedPanel.jsx'
 import baseLibrary from '../../examples/library.json'
 import formExample from '../../examples/nodegraph-form.json'
 import formRotation from '../../examples/nodegraph-rotation-xor.json'
@@ -111,6 +113,7 @@ function Studio({ mode, active }) {
   const [message, setMessage] = useState(null)
   const [flow, setFlow] = useState(null)
   const [kind, setKind] = useState('')
+  const [pane, setPane] = useState('graph')
   const [workspace, setWorkspace] = useState(0)
   // React Flow measurements belong to the view, never to the Minecraft document.
   const [nodeMeasurements, setNodeMeasurements] = useState({})
@@ -125,6 +128,7 @@ function Studio({ mode, active }) {
   const copycatInput = useRef(null)
   const canvas = useRef(null)
   const entries = useMemo(() => inspect(mode, document), [mode, document])
+  const resolved = useMemo(() => hasReferences(document) ? expandReferences(document,library) : null,[document,library])
   const wires = useMemo(() => connections(entries), [entries])
   const current = entries.find(({ node }) => node.id === selected)
   const resultNode = entries.find(({ node }) => ['OUTPUT', 'BUILDING'].includes(node.kind) && !document.graph.nodeGroups?.some(group => group.nodes.includes(node.id)))
@@ -216,6 +220,7 @@ function Studio({ mode, active }) {
   }
   const add = () => transact(() => {
     if (!kind) return
+    if (mode === 'building' && kind === 'COPYCAT') { chooseCopycat(); return }
     const { left, top, width, height } = canvas.current.getBoundingClientRect()
     const center = flow?.screenToFlowPosition({ x: left + width * 0.5, y: top + height * 0.4 }) ?? { x: 50, y: 50 }
     const id = `node_${crypto.randomUUID().slice(0, 13)}`
@@ -234,7 +239,7 @@ function Studio({ mode, active }) {
   }
   const compatible = ({ source, target, targetHandle }) => {
     const port = entries.find(({ node }) => node.id === target)?.ports.find(port => port.id === targetHandle)
-    const sourceKind = entries.find(({ node }) => node.id === source)?.node.kind
+    const sourceKind = entries.find(({ node }) => node.id === source)?.sourceKind || entries.find(({ node }) => node.id === source)?.node.kind
     return source !== target && Boolean(port?.accepts.includes(sourceKind))
   }
   const importFile = async (event, isLibrary) => {
@@ -268,10 +273,18 @@ function Studio({ mode, active }) {
   const chooseCopycat = nodeId => {
     const node = entries.find(entry => entry.node.id === nodeId)?.node
     const initialId = node?.kind === 'INPUT' ? `base:${node.part.source}` : node?.kind === 'COPYCAT' ? `library:${node.form}` : null
-    setCopycatPicker({ nodeId, initialId, initialCategory: node && node.kind !== 'INPUT' ? 'saved' : 'basic' })
+    setCopycatPicker({ nodeId, initialId, initialCategory: 'all' })
   }
   const applyCopycat = option => {
-    const result = applyCopycatOption({ mode, document, library, materials, nodeId: copycatPicker.nodeId, option })
+    let result
+    if (option.referenceOption) { result = applyReference({ document, library, nodeId: copycatPicker.nodeId, option });result.materials = materials }
+    else {
+      const old = document.graph.nodes.find(n => n.id === copycatPicker.nodeId)
+      const target = old?.kind === 'REFERENCE' ? { ...document, graph:{...document.graph,nodes:document.graph.nodes.map(n => n.id === old.id ? copycatFromReference(old) : n)} } : document
+      result = applyCopycatOption({ mode, document:target, library, materials, nodeId:copycatPicker.nodeId, option })
+      const overrides = old?.referenceOverrides || instanceOverrides(old)
+      if (Object.keys(overrides).length) result.document = editNode(mode,result.document,{...result.document.graph.nodes.find(n=>n.id===result.nodeId),...overrides})
+    }
     commit(result.document)
     setLibrary(result.library); setMaterials(result.materials); setSelected(result.nodeId); setSelectedIds([result.nodeId])
     setSelectedWire(null); setMessage(null)
@@ -287,7 +300,7 @@ function Studio({ mode, active }) {
     try {
       const json = JSON.stringify(writeGraph(mode, document))
       await navigator.clipboard.writeText(json)
-      setMessage({ text: 'Minecraft-JSON kopiert. Im passenden Editor im Spiel importieren.' })
+      setMessage({ text: hasReferences(document) ? 'Graphstudio-JSON mit gespeicherten Referenzversionen kopiert.' : 'Minecraft-JSON kopiert. Im passenden Editor im Spiel importieren.' })
     } catch (error) {
       setMessage({ error: true, text: `JSON konnte nicht kopiert werden: ${error.message || String(error)}. Nutze alternativ JSON exportieren.` })
     }
@@ -304,7 +317,11 @@ function Studio({ mode, active }) {
       removeSelection()
     }
   }
-  return <div className="studio" hidden={!active} onKeyDown={keydown}>
+  return <div className="studio" data-pane={pane} hidden={!active} onKeyDown={keydown}>
+    <div className="studio-navigation">
+      <button onClick={() => chooseCopycat(['INPUT','SAVED','COPYCAT','REFERENCE'].includes(current?.node.kind) ? current.node.id : undefined)}>{mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'}</button>
+      <div className="pane-tabs" role="group" aria-label="Arbeitsansicht">{[['graph','Graph'],['preview','Vorschau'],['inspector','Eigenschaften']].map(([id,label]) => <button key={id} aria-pressed={pane === id} onClick={() => setPane(id)}>{label}</button>)}</div>
+      <details className="studio-tools"><summary>Datei & Bibliothek</summary><PagedPanel label="Werkzeuge" onClose={event => {event.currentTarget.closest("details").open=false}}>
     <div className="toolbar">
       <label className="example-select"><span>BEISPIELE</span><select aria-label="Beispiel öffnen" value="" onChange={e => transact(() => open(examples[mode][Number(e.target.value)][1]))}>
         <option value="" disabled>Beispiel öffnen</option>
@@ -314,7 +331,7 @@ function Studio({ mode, active }) {
         { schema: 3, name: 'Neue Form', parts: [{ source: 'copycats:copycat_slice' }] }))}>Neu</button>
       <button type="button" onClick={() => graphInput.current.click()}>JSON öffnen</button>
       <input hidden ref={graphInput} type="file" accept=".json,application/json" onChange={event => importFile(event, false)} />
-      <button type="button" onClick={() => chooseCopycat(['INPUT', 'SAVED', 'COPYCAT'].includes(current?.node.kind) ? current.node.id : undefined)}>Copycat auswählen</button>
+      <button type="button" onClick={() => chooseCopycat(['INPUT', 'SAVED', 'COPYCAT', 'REFERENCE'].includes(current?.node.kind) ? current.node.id : undefined)}>{mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'}</button>
       {mode === 'building' && <>
         <button type="button" onClick={() => copycatInput.current.click()}>Copycat laden</button>
         <input hidden ref={copycatInput} type="file" accept=".json,application/json" onChange={async event => {
@@ -329,7 +346,7 @@ function Studio({ mode, active }) {
         <input hidden ref={libraryInput} type="file" accept=".json,application/json" onChange={event => importFile(event, true)} />
       </>}
       <button type="button" className="primary" onClick={exportFile}>JSON exportieren</button>
-      <button type="button" onClick={copyJson}>Minecraft-JSON kopieren</button>
+      <button type="button" onClick={copyJson}>{hasReferences(document) ? 'Graphstudio-JSON kopieren' : 'Minecraft-JSON kopieren'}</button>
       <span className="toolbar-spacer" />
       <button type="button" aria-label="Rückgängig" title="Rückgängig" disabled={!history.past.length} onClick={() => travelHistory('undo')}>↶</button>
       <button type="button" aria-label="Wiederholen" title="Wiederholen" disabled={!history.future.length} onClick={() => travelHistory('redo')}>↷</button>
@@ -340,29 +357,31 @@ function Studio({ mode, active }) {
       <button onClick={() => transact(() => {
         const name = saveName.trim() || document.name || 'Graph'
         const existing = savedData.graphs.find(entry => entry.mode === mode && entry.name === name)
-        if (!existing && savedData.graphs.length >= 500) throw new Error('Höchstens 500 Graphen speichern. Zuerst nicht mehr benötigte Einträge entfernen.')
-        const entry = { id: existing?.id || crypto.randomUUID(), name, mode, document, library, materials }
+        if (savedData.graphs.length >= 500) throw new Error('Höchstens 500 Graphen speichern. Zuerst nicht mehr benötigte Einträge entfernen.')
+        const entry = { id: crypto.randomUUID(), graphId: existing?.graphId || existing?.id || crypto.randomUUID(), version: Math.max(0,...savedData.graphs.filter(e => e.mode === mode && e.name === name).map(e => e.version || 1)) + 1, name, mode, document, library, materials }
         updateWorkspace(data => ({ ...data, graphs: [...data.graphs.filter(item => item.id !== entry.id), entry] }))
         setMessage({ text: 'Graph in deiner Browserbibliothek gespeichert.' })
       })}>Graph speichern</button>
       <select aria-label="Gespeicherten Graph öffnen" value="" onChange={event => transact(() => {
         const entry = savedData.graphs.find(entry => entry.id === event.target.value)
         open(entry.document); setLibrary(entry.library || baseLibrary); setMaterials(entry.materials || {})
-      })}><option value="" disabled>Gespeicherte Graphen</option>{savedData.graphs.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select>
+      })}><option value="" disabled>Gespeicherte Graphen</option>{savedData.graphs.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name} · v{entry.version || 1}</option>)}</select>
       <button title="Mit Umschalt mehrere Knoten auswählen" disabled={!selectedIds.length && !current} onClick={() => transact(() => {
         const entry = saveNodeGroup(mode, document, selectedIds.length ? selectedIds : [selected], saveName, materials, library)
         const existing = savedData.nodeGroups.find(item => item.mode === mode && item.name === entry.name)
         if (!existing && savedData.nodeGroups.length >= 500) throw new Error('Höchstens 500 Knotengruppen speichern.')
         if (existing) entry.id = existing.id
+        entry.version = (existing?.version || 0) + 1
         updateWorkspace(data => ({ ...data, nodeGroups: [...data.nodeGroups.filter(item => item.id !== entry.id), entry] }))
       })}>Knotengruppe speichern</button>
       <select aria-label="Knotengruppe einfügen" value="" onChange={event => transact(() => {
         const entry = savedData.nodeGroups.find(entry => entry.id === event.target.value)
         const nextLibrary = mergeLibraries(library, entry.library)
         const inserted = insertNodeGroup(document, entry); commit(inserted.document); setLibrary(nextLibrary); setMaterials(current => ({ ...current, ...inserted.materials })); setWorkspace(key => key + 1)
-      })}><option value="" disabled>Knotengruppe einfügen</option>{savedData.nodeGroups.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select>
+      })}><option value="" disabled>Knotengruppe einfügen</option>{savedData.nodeGroups.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name} · v{entry.version || 1}</option>)}</select>
     </div>
 
+    </PagedPanel></details></div>
     <div className="workbench" style={{ '--graph-share': `${graphShare}fr`, '--side-share': `${100 - graphShare}fr` }}>
       <section className="canvas-panel" aria-label="Graph bearbeiten">
         <div className="panel-heading graph-heading">
@@ -406,14 +425,14 @@ function Studio({ mode, active }) {
           <div className="panel-heading"><span>Inspektor</span><div className="button-row"><small>{current ? 'AUSWAHL' : 'ERGEBNIS'}</small>
             <button type="button" aria-expanded={!inspectorCollapsed} aria-controls={`${mode}-inspector`} aria-label={inspectorCollapsed ? 'Inspektor ausklappen' : 'Inspektor einklappen'} onClick={() => setInspectorCollapsed(value => !value)}>{inspectorCollapsed ? '▸' : '▾'}</button>
           </div></div>
-          <div id={`${mode}-inspector`} className="inspector-body" hidden={inspectorCollapsed} key={visibleNode.node.id}>
+          <PagedPanel id={`${mode}-inspector`} label="Eigenschaften" className="inspector-body" hidden={inspectorCollapsed} key={visibleNode.node.id}>
             <a className="reference-link" href={`${wiki}/Knoten-${mode === 'form' ? 'Formgraph' : 'Gebaeudegraph'}#${visibleNode.node.kind.toLowerCase()}`}>Knotenreferenz ↗</a>
             <h2>{visibleNode.node.name || names[visibleNode.node.kind]}</h2>
             <div className="node-id">{visibleNode.node.id} · Ausgang: {visibleNode.outputType || 'Ergebnis'}</div>
             {visibleNode.ports.length > 0 && <details open><summary>Verbindungen</summary>
               {visibleNode.ports.map(port => <Field key={port.id} label={portName(port, visibleNode.node)}
                 value={port.source} options={[[ '', 'Offen' ], ...entries.filter(({ node }) =>
-                  port.accepts.includes(node.kind) && node.id !== visibleNode.node.id)
+                  port.accepts.includes(entries.find(e => e.node.id === node.id)?.sourceKind || node.kind) && node.id !== visibleNode.node.id)
                   .map(({ node }) => [node.id, node.name || `${names[node.kind]} · ${node.id}`])]}
                 onChange={source => setWire(visibleNode.node.id, port.id, source)} />)}
               {portLimits && portLimits.min !== portLimits.max && <div className="button-row">
@@ -425,20 +444,20 @@ function Studio({ mode, active }) {
                   })}>Letzten Eingang entfernen</button>
               </div>}
             </details>}
-            <NodeFields {...{ mode, node: visibleNode.node, document, edit: patchNode, library }}
+            {visibleNode.node.kind === 'REFERENCE' ? <><Field label="Knotenname" value={visibleNode.node.name || ''} maxLength={64} onChange={name => patchNode({name})} /><button onClick={() => chooseCopycat(visibleNode.node.id)}>Referenz auswählen …</button><p>{visibleNode.node.reference.id} · Version {visibleNode.node.reference.version}</p>{Object.keys(visibleNode.node.referenceOverrides || {}).length > 0 && <button onClick={() => patchNode({referenceOverrides:{}})}>Instanzeinstellungen zurücksetzen</button>}<p>Ausgang: {visibleNode.outputType}. Die gespeicherte Definition bleibt unverändert.</p><details><summary>Definition dieser Version ansehen</summary><p>{visibleNode.node.reference.document.name || visibleNode.node.name}</p>{visibleNode.node.reference.document.graph.nodes.map(n => <p key={n.id}>{n.name || names[n.kind] || n.kind} · {n.id}</p>)}</details></> : <NodeFields {...{ mode, node: visibleNode.node, document, edit: patchNode, library }}
               onInspectNode={id => { setSelected(id); setSelectedIds([id]); setSelectedWire(null) }}
               onChooseCopycat={() => chooseCopycat(visibleNode.node.id)}
-              onImportCopycat={() => copycatInput.current.click()} />
+              onImportCopycat={() => copycatInput.current.click()} />}
             {(selectedWire || current && !protectedNode(current.node)) &&
               <button className="danger" type="button" onClick={removeSelection}>{selectedWire ? 'Verbindung trennen' : 'Knoten löschen'}</button>}
-            <NativeDocumentFields {...{ mode, document }} selection={selectedIds} edit={next => transact(() => commit(next))} />
+            <NativeDocumentFields mode={mode} document={resolved?.document || document} managedGroups={resolved?.managedGroups || []} selection={selectedIds.filter(id => !resolved?.owned.has(id))} edit={next => transact(() => commit(resolved ? foldReferenceEdit(document,resolved,next) : next))} />
             <DocumentFields {...{ mode, document, library, materials, setMaterials }} edit={next => transact(() => commit(next))} />
-          </div>
+          </PagedPanel>
         </section>
       </div>
     </div>
     {copycatPicker && <Suspense fallback={<p className="copycat-loading" role="status">Copycat-Auswahl wird geladen …</p>}>
-      <CopycatPicker {...copycatPicker} mode={mode} savedForms={savedForms} library={library}
+      <CopycatPicker {...copycatPicker} mode={mode} savedForms={savedForms} savedGraphs={savedData.graphs} savedGroups={savedData.nodeGroups} library={library}
         onChoose={applyCopycat} onClose={() => setCopycatPicker(null)} />
     </Suspense>}
   </div>

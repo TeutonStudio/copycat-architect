@@ -1,10 +1,11 @@
+import { hasReferences, expandReferences, referenceEntries, referenceWires } from './references.js'
 import { applyGraphDiagram, replaceGraphNodes, exportDocument, editInspectorNode, normalizeDocument, wireModels, compileForm, graphModels, inspectGraph, prepareForm } from './generated/engine.mjs'
 
 export const model = { ...graphModels(), mirrorPlanes: wireModels().enums.CopycatMirrorPlane }
 export const defaults = [{ id: 'body', name: 'Body', role: 'surface', priority: 0 }]
 export const formGroups = document => document.groups ?? defaults
 export const position = value => Math.max(model.positionMin, Math.min(model.positionMax, Math.round(value)))
-export const inspect = (mode, document) => inspectGraph(mode === 'building', document)
+export const inspect = (mode, document) => mode === 'building' && hasReferences(document) ? referenceEntries(document) : inspectGraph(mode === 'building', document)
 
 // Preserve absent defaults and extension metadata. Native operations still own every
 // recognized field, group reference and schema change. Arrays of nodes follow IDs.
@@ -32,7 +33,8 @@ function retainedGraph(document, graph) {
 }
 export function replaceNodes(document, nodes) {
   const candidate = { ...document, graph: { ...document.graph, nodes } }
-  return { ...candidate, graph: retainedGraph(candidate, replaceGraphNodes(nodes.some(node => node.kind === 'BUILDING'), document, nodes)) }
+  if (hasReferences(candidate)) { inspect('building', candidate); return {...candidate,referenceSchema:1} }
+  return { ...candidate, graph: retainedGraph(candidate, replaceGraphNodes(nodes.some(node => node.kind === 'BUILDING'), hasReferences(document) ? candidate : document, nodes)) }
 }
 
 export function readGraph(raw, mode) {
@@ -56,6 +58,7 @@ export function readGraph(raw, mode) {
 
 export function writeGraph(mode, document) {
   inspect(mode, document)
+  if (hasReferences(document)) return structuredClone(document)
   return retainShape(document, normalizeDocument(mode === 'building', document), exportDocument(mode === 'building', document))
 }
 
@@ -71,6 +74,7 @@ export function protectedNode(node) {
 }
 
 export function applyWires(mode, document, entries, wires, removed = []) {
+  if (hasReferences(document)) return referenceWires(document, wires, removed)
   const layout = entries.map(({ node }) => node).filter(node => !removed.includes(node.id))
   const graph = applyGraphDiagram(mode === 'building', document, layout, wires)
   return { ...document, graph: retainedGraph(document, graph) }
@@ -90,5 +94,11 @@ export function validateLibrary(data) {
 }
 
 export function editNode(mode, document, node) {
+  if (hasReferences(document)) {
+    if (node.kind === 'REFERENCE') return replaceNodes(document, document.graph.nodes.map(n => n.id === node.id ? node : n))
+    const expanded = expandReferences(document)
+    const edited = editInspectorNode(true, expanded.document, node)
+    return replaceNodes(document, document.graph.nodes.map(n => n.kind === 'REFERENCE' ? n : edited.nodes.find(v => v.id === n.id)))
+  }
   return { ...document, graph: retainedGraph(document, editInspectorNode(mode === 'building', document, node)) }
 }

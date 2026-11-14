@@ -1,3 +1,4 @@
+import { hasReferences, expandReferences } from './references.js'
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { inspectorContext, wireModels, editNativeGroup, groupInterfaceContext, editGroupInterface } from './generated/engine.mjs'
 
@@ -160,7 +161,11 @@ export function NativeFields({ mode, node, edit, document, library, onInspectNod
     if (mode !== 'building') return { mode, library, node: draft, slopes: model.roofSlopes }
     try {
       const altered = { ...document, graph: { ...document.graph, nodes: document.graph.nodes.map(item => item.id === node.id ? draft : item) } }
-      return { ...inspectorContext(altered, node.id), mode, library, node: draft, carpets: contextCarpets }
+      const resolved = hasReferences(altered) ? expandReferences(altered,library) : {document:altered,library}
+      const native = inspectorContext(resolved.document, node.id)
+      const ids = new Set(document.graph.nodes.map(n => n.id))
+      for (const key of Object.keys(native.references || {})) native.references[key] = native.references[key].filter(n => ids.has(n.value))
+      return { ...native, mode, library:resolved.library, node: draft, carpets: contextCarpets }
     } catch { return { mode, library, node: draft, references: {}, carpets: [] } }
   }, [mode, document, library, draft])
   if (mode === 'building' && ['ROTATION', 'MIRRORING'].includes(node.kind)) return <TransformValues {...{ node, edit }} />
@@ -180,7 +185,7 @@ export function NativeFields({ mode, node, edit, document, library, onInspectNod
         : field.path === 'surfaces' ? <fieldset><legend>Materialgruppen</legend>{groups.map(group => <MaterialField key={group.id} blockOnly label={group.name} value={draft.surfaces?.[group.id] || context.palette?.[group.role === 'surface' ? draft.role : group.role] || ''} onChange={value => patch('surfaces', Object.fromEntries(groups.map(item => [item.id, item.id === group.id ? value : draft.surfaces?.[item.id] || context.palette?.[item.role === 'surface' ? draft.role : item.role] || 'minecraft:stone'])))} />)}<button type="button" onClick={() => patch('surfaces', null)}>Gebäudepalette verwenden</button></fieldset>
         : <Value type={field.type} value={getPath(draft, field.path)} path={field.path} settings={field} title={label(field.path.split('.').at(-1))} change={next => patch(field.path, next)} />}
     </div>)}
-    {(node.kind === 'PATTERN' || node.kind === 'SEGMENT_UNION' || node.kind === 'STOREY' && node.storeyMode === 'rooms') && <ArrangementGrid {...{ node, document, library, edit }} />}
+    {(node.kind === 'PATTERN' || node.kind === 'SEGMENT_UNION' || node.kind === 'STOREY' && node.storeyMode === 'rooms') && <ArrangementGrid {...{ node, document: hasReferences(document) ? expandReferences(document,library).document : document, library:hasReferences(document) ? expandReferences(document,library).library : library, edit }} />}
     <button type="button" className="primary" disabled={JSON.stringify(draft) === JSON.stringify(node)} onClick={() => edit(Object.fromEntries(fields.map(field => field.path.split('.')[0]).map(key => [key, draft[key]])))}>Übernehmen</button>
   </details></Context.Provider>
 }
@@ -193,7 +198,7 @@ function GroupInterfaceFields({ mode, document, group, onApply }) {
     <button type="button" className="primary" onClick={() => onApply(face)}>Schnittstelle übernehmen</button>
   </div></Context.Provider>
 }
-export function NativeDocumentFields({ mode, document, edit, selection = [] }) {
+export function NativeDocumentFields({ mode, document, edit, selection = [], managedGroups = [] }) {
   const [groupName, setGroupName] = useState('Gruppe')
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null)
@@ -209,7 +214,7 @@ export function NativeDocumentFields({ mode, document, edit, selection = [] }) {
     <details><summary>Knotengruppen im Graphen</summary>
       <label>Gruppenname<input value={groupName} onChange={event => setGroupName(event.target.value)} maxLength={64} /></label>
       <button type="button" disabled={!selection.length} onClick={() => act('create')}>Auswahl gruppieren</button>
-      {(document.graph.nodeGroups || []).map(group => <fieldset key={group.id}><legend>{group.name}</legend>
+      {(document.graph.nodeGroups || []).filter(group => !managedGroups.includes(group.id)).map(group => <fieldset key={group.id}><legend>{group.name}</legend>
         <small>{group.nodes.length} Knoten · {group.graphInterface?.inputs.length || 0} benannte Eingänge</small>
         <div className="button-row"><button type="button" onClick={() => act('instantiate', group.id)}>Instanz erstellen</button>
           <button type="button" onClick={() => act('rename', group.id)}>Umbenennen</button>
