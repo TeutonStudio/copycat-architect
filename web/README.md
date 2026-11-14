@@ -61,6 +61,25 @@ Instanzen nicht. Die 3D-Vorschau wertet die eingebettete Definition aus; inkompa
 Verbindungen, rekursive Definitionen und Überschreitungen der nativen Knotengrenze
 werden abgewiesen. Graphspeicherungen erhalten fortlaufende Versionen.
 
+**Als Kopie im Graph öffnen** öffnet die Auswahl als eigenen Entwurf. Bei einer
+vollständigen Architekturvorlage zeigt der Gebäudegraph die Copycat-Quellen,
+ihre Anordnung und das Segment. Im Inspektor einer Quelle führt
+**Als Kopie im Graph öffnen/bearbeiten** weiter in den Formgraphen.
+Die 32 Einzelprofile des Renaissance-Bausatzes werden aus ihren gespeicherten
+Rasterprofilen als bearbeitbare Grundformen, Schnitte, Differenzen und Vereinigungen
+rekonstruiert. Dies ist eine geometrisch geprüfte Konstruktion, keine wiederhergestellte
+ursprüngliche Bearbeitungshistorie. Komplexe Profile enthalten kleinere Baugruppen,
+die mit derselben Aktion bis zu ihren Grundformen geöffnet werden können.
+
+**In Bauteilkopie übernehmen** beziehungsweise **In Formkopie übernehmen** wendet
+eine bearbeitete Quelle ausdrücklich auf die eigene Kopie an. **Zurück ohne Übernahme**
+kehrt ohne diese Änderung zurück. Materialien, Rückweg und offene Kopie bleiben beim
+Neuladen erhalten. Bereits vorhandene, noch nicht gespeicherte Zielentwürfe werden vor
+dem Öffnen unter **Entwurf vor Kopie** in der Graphbibliothek gesichert. Vorlage und
+bestehende Referenzversionen werden nicht geändert; die Kopie kann unter eigenem Namen
+gespeichert und wiederverwendet werden. `editableGraph` und `editableMaterials` halten
+bei gespeicherten Formquellen die zugehörige bearbeitbare Konstruktion fest.
+
 Der Browservertrag verwendet `referenceSchema: 1` und `kind: "REFERENCE"` mit
 `reference: {schema, id, version, output, document, library, bindings}` sowie
 `referenceInputs` und optionalen `referenceOverrides` für Instanzeinstellungen. JSON-Export, Zwischenablage und Browsersicherung erhalten diese

@@ -11,7 +11,7 @@ export function listReferenceOptions({ mode = 'building', savedForms = [], saved
   const forms = listCopycatOptions({ savedForms, library }).map(option => ({ ...option, path: [option.category === 'basic' ? 'Grundformen' : 'Gespeicherte Formen', ...option.name.split('/').map(s => s.trim()).filter(Boolean)] }))
   const graphs = savedGraphs.filter(entry => entry.mode === 'building' && mode === 'building').map(entry => ({
     id: `graph:${entry.id}`, kind: 'graph', category: 'graphs', name: entry.name, identity: entry.graphId || entry.id,
-    version: entry.version || 1, entry, path: ['Gespeicherte Graphen', ...entry.name.split('/').map(s => s.trim()).filter(Boolean)],
+    version: entry.version || 1, output:entry.output || entry.document?.editableOutput, entry, path: ['Gespeicherte Graphen', ...entry.name.split('/').map(s => s.trim()).filter(Boolean)],
   }))
   const groups = savedGroups.filter(entry => mode === 'building' || entry.mode === 'form').map(entry => ({
     id: `group:${entry.id}`, kind: 'group', category: 'groups', name: entry.name, identity: entry.graphId || entry.id,

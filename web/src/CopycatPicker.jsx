@@ -75,7 +75,7 @@ function ShapeCard({ option, selected, previews, onSelect }) {
   </button>
 }
 
-export default function CopycatPicker({ mode, savedForms, savedGraphs, savedGroups, library, initialId, initialCategory = 'all', onChoose, onClose }) {
+export default function CopycatPicker({ mode, savedForms, savedGraphs, savedGroups, library, initialId, initialCategory = 'all', onChoose, onOpenCopy, onClose }) {
   const { catalog } = useWorkspace()
   const dialog = useRef(null)
   const id = useId()
@@ -144,6 +144,12 @@ export default function CopycatPicker({ mode, savedForms, savedGraphs, savedGrou
     try { await onChoose(chosen); onClose() }
     catch (error) { setError(error.message || String(error)); setApplying(false) }
   }
+  const openCopy = async () => {
+    if (!chosen || applying) return
+    setApplying(true);setError('')
+    try { await onOpenCopy(chosen);onClose() }
+    catch(error) {setError(error.message || String(error));setApplying(false)}
+  }
   const keydown = event => {
     event.stopPropagation()
     if (event.key !== 'Tab') return
@@ -208,7 +214,7 @@ export default function CopycatPicker({ mode, savedForms, savedGraphs, savedGrou
       <footer className="copycat-dialog-footer">
         <div className="copycat-selection-status" role="status">{error ? <span className="error">{error}</span>
           : chosen ? <><strong>{chosen.name}</strong><span> zur Übernahme ausgewählt</span></> : 'Noch keine Quelle ausgewählt'}</div>
-        <div className="button-row"><button type="button" disabled={applying} onClick={onClose}>Abbrechen</button>
+        <div className="button-row"><button type="button" disabled={applying} onClick={onClose}>Abbrechen</button>{onOpenCopy && <button type="button" disabled={!chosen || applying} onClick={openCopy}>Als Kopie im Graph öffnen</button>}
           <button type="button" className="primary" disabled={!ready || applying} onClick={choose}>{applying ? 'Wird übernommen …' : 'Auswahl übernehmen'}</button></div>
       </footer>
     </div>
