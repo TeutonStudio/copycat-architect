@@ -16,11 +16,12 @@ export const names = {
   COPYCAT_UNION: 'Copycat-Vereinigung', COPYCAT_INTERSECTION: 'Copycat-Schnitt', COPYCAT_DIFFERENCE: 'Copycat-Differenz', COPYCAT_SYMMETRIC_DIFFERENCE: 'Symmetrische Copycat-Differenz',
   SEGMENT_MIRROR: 'Segment spiegeln', SEGMENT_ROTATE: 'Segment rotieren',
   SEGMENT_UNION: 'Segment-Vereinigung', SEGMENT_INTERSECTION: 'Segment-Schnitt', SEGMENT_DIFFERENCE: 'Segment-Differenz', SEGMENT_SYMMETRIC_DIFFERENCE: 'Symmetrische Segment-Differenz',
-  COPYCAT: 'Copycat-Referenz', SEGMENT: 'Wandsegment', PATTERN: 'Wandmuster', FLOOR: 'Boden', CEILING: 'Decke',
+  REFERENCE: 'Referenz', COPYCAT: 'Referenz', SEGMENT: 'Wandsegment', PATTERN: 'Wandmuster', FLOOR: 'Boden', CEILING: 'Decke',
   ROOM: 'Raum', STOREY: 'Geschoss', ROOF: 'Dach', BUILDING: 'Gebäude'
 }
 
 export function portName(port, node) {
+  if (port.name) return port.name
   const native = { length: 'Länge (Y)', roofPeak: 'Dachspitze (optional)', roofEave: 'Dachendkante / Traufe (optional)', layout: 'Anordnung', geometry: 'Grundriss', area: 'Fläche', tread: 'Stufen', landing: 'Podest', enclosure: 'Schachtwände' }
   if (native[port.id]) return native[port.id]
   if (port.id.startsWith('region:')) return `Bereich ${port.id.slice(7)}`
@@ -93,7 +94,7 @@ function NumberGrid({ entries, keys, ranges, update, prefix, scale = 1, unit = '
   </div>)
 }
 
-export function NodeFields({ mode, node, document, edit, library, onChooseCopycat, onImportCopycat, onInspectNode }) {
+export function NodeFields({ mode, node, document, edit, library, onChooseCopycat, onImportCopycat, onInspectNode, onOpenSourceCopy }) {
   const field = (key, label, options, type, min, max) =>
     <Field key={key} label={label} value={node[key]} onChange={value => edit({ [key]: value })} {...{ options, type, min, max }} />
   const number = (key, label, min, max) => field(key, label, undefined, 'number', min, max)
@@ -101,8 +102,8 @@ export function NodeFields({ mode, node, document, edit, library, onChooseCopyca
   const source = model.shapes.find(shape => shape.id === node.part?.source)
   const sourceName = node.kind === 'INPUT' ? copycatShapeNames[source?.name] || source?.name
     : node.kind === 'SAVED' ? node.savedCopycat?.name : library.forms?.[node.form]?.name || node.form
-  const copycatPicker = <button type="button" className="copycat-source-button" aria-label="Copycat auswählen" onClick={onChooseCopycat}>
-    <span>Copycat auswählen …</span><small>{sourceName || 'Grundform oder gespeicherte Form'}</small>
+  const copycatPicker = <button type="button" className="copycat-source-button" aria-label={mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'} onClick={onChooseCopycat}>
+    <span>{mode === 'building' ? 'Referenz auswählen …' : 'Copycat auswählen …'}</span><small>{sourceName || 'Grundform oder gespeicherte Form'}</small>
   </button>
   if (mode === 'form') {
     const part = node.part
@@ -113,7 +114,7 @@ export function NodeFields({ mode, node, document, edit, library, onChooseCopyca
     const groupFields = ['UNION', 'SYMMETRIC_DIFFERENCE'].includes(node.kind)
     return <>
       <NativeFields {...{ mode, node, edit, document, library, onInspectNode }} />
-      {node.kind === 'SAVED' && copycatPicker}
+      {node.kind === 'SAVED' && <>{copycatPicker}<button onClick={onOpenSourceCopy}>Als Kopie im Graph öffnen/bearbeiten</button></>}
       {node.kind === 'MIRROR' && <Field label="Spiegelebene" value={node.mirror?.plane || 'X'} options={model.mirrorPlanes} onChange={plane => edit({ mirror: { plane } })} />}
       {node.kind === 'INPUT' && adapter && <>
         {copycatPicker}
@@ -146,7 +147,7 @@ export function NodeFields({ mode, node, document, edit, library, onChooseCopyca
   if (node.id === 'empty_wall') return <p className="hint">Standardquelle für eine freie Wandöffnung.</p>
   return <>
     {field('name', 'Knotenname')}
-    {node.kind === 'COPYCAT' && <>{copycatPicker}<button type="button" onClick={onImportCopycat}>Formdatei laden</button></>}
+    {node.kind === 'COPYCAT' && <>{copycatPicker}{!node.block && library.forms?.[node.form] && <button onClick={onOpenSourceCopy}>Als Kopie im Graph öffnen/bearbeiten</button>}<button type="button" onClick={onImportCopycat}>Formdatei laden</button></>}
     <NativeFields {...{ mode, node, edit, document, library, onInspectNode }} />
     {['ROOM', 'STOREY', 'BUILDING'].includes(node.kind) && field('preview', 'Vorschaufilter', viewFilters)}
     {['COPYCAT_DIFFERENCE', 'SEGMENT_DIFFERENCE'].includes(node.kind) && <button type="button" onClick={() => edit({ inputs: [...node.inputs].reverse() })}>A / B tauschen</button>}

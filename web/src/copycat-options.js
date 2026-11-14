@@ -1,3 +1,4 @@
+import { previewReference } from './references.js'
 import { previewGraph } from './generated/engine.mjs'
 import { model, readGraph } from './model.js'
 import { parseMaterial } from './materials.js'
@@ -47,6 +48,7 @@ export function listCopycatOptions({ savedForms = [], library = {} } = {}) {
 }
 
 export function previewCopycatOption(option) {
+  if (option.referenceOption) return previewReference(option)
   const source = readGraph(option.document, 'form')
   // An editor's output filter is only a viewing preference. Loading a saved
   // Copycat imports every material group, so its selection preview must too.

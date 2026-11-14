@@ -12,6 +12,9 @@ import { Workspace, useWorkspace } from './Workspace.jsx'
 import { loadBuildingCopycat, loadFormCopycatWithMaterials } from './copycat-library.js'
 import { applyCopycatOption } from './copycat-selection.js'
 import { insertNodeGroup, mergeLibraries, saveNodeGroup } from './node-groups.js'
+import { applyReference, hasReferences, expandReferences, foldReferenceEdit, instanceOverrides, copycatFromReference } from './references.js'
+import { PagedPanel } from './PagedPanel.jsx'
+import { copyReferenceOption, copyNodeSource } from './editable-copy.js'
 import baseLibrary from '../../examples/library.json'
 import formExample from '../../examples/nodegraph-form.json'
 import formRotation from '../../examples/nodegraph-rotation-xor.json'
@@ -37,7 +40,7 @@ const examples = {
 const query = new URLSearchParams(window.location.search)
 const initialMode = query.get('editor') === 'form' || query.get('graph') === 'copycat' ? 'form' : 'building'
 
-function DiagramNode({ id, data: { node, ports, groupName, outputType, hasOutput }, selected }) {
+function DiagramNode({ id, data: { node, ports, groupName, editorLabel, outputType, hasOutput }, selected }) {
   const updateInternals = useUpdateNodeInternals()
   const signature = ports.map(port => port.id).join('|')
   useEffect(() => updateInternals(id), [id, signature, updateInternals])
@@ -45,7 +48,7 @@ function DiagramNode({ id, data: { node, ports, groupName, outputType, hasOutput
   return <div className={`diagram-node ${selected ? 'selected' : ''} ${source ? '' : 'result-node'}`}>
     <div className="node-heading">
       <span className="node-symbol">{source ? '◇' : '◆'}</span>
-      <div><strong>{node.name || names[node.kind]}</strong><small>{node.name ? names[node.kind] : node.id}{groupName ? ` · ${groupName}` : ''}</small></div>
+      <div><strong>{editorLabel || node.name || names[node.kind]}</strong><small>{node.name ? names[node.kind] : node.id}{groupName ? ` · ${groupName}` : ''}</small></div>
       {source && <Handle type="source" position={Position.Right} id="out" aria-label={`Ausgang · ${outputType}`} title={`Ausgang · ${outputType}`} />}
     </div>
     {ports.length > 0 && <div className="ports">{ports.map(port => <div className="port" key={port.id}>
@@ -83,16 +86,17 @@ function downloadJson(document, mode) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-function Studio({ mode, active }) {
+function Studio({ mode, active, editorRequest, onOpenCopy, onApplyCopy }) {
   const { data: savedData, update: updateWorkspace } = useWorkspace()
   const draft = savedData.drafts[mode]
   const history = useHistory(draft?.document ?? examples[mode][0][1])
   const document = history.current
   const [library, setLibrary] = useState(draft?.library ?? baseLibrary)
   const [materials, setMaterials] = useState(draft?.materials ?? {})
+  const [copyReturn, setCopyReturn] = useState(draft?.copyReturn || null)
   // A source change also changes material mappings and library snapshots.
   const historyContext = useRef(new WeakMap())
-  const [selectedIds, setSelectedIds] = useState([])
+  const [selectedIds, setSelectedIds] = useState(draft?.document?.editableOutput ? [draft.document.editableOutput] : [])
   const onSelectionChange = useCallback(({ nodes }) => setSelectedIds(previous => {
     const next = nodes.map(node => node.id)
     return next.length === previous.length && next.every(id => previous.includes(id)) ? previous : next
@@ -101,16 +105,18 @@ function Studio({ mode, active }) {
   useEffect(() => {
     updateWorkspace(data => {
       const previous = data.drafts[mode]
-      return previous?.document === document && previous?.library === library && previous?.materials === materials ? data
-        : { ...data, drafts: { ...data.drafts, [mode]: { mode, document, library, materials } } }
+      return previous?.document === document && previous?.library === library && previous?.materials === materials && previous?.copyReturn === copyReturn ? data
+        : { ...data, drafts: { ...data.drafts, [mode]: { mode, document, library, materials, copyReturn } } }
     })
-  }, [mode, document, library, materials])
-  const [selected, setSelected] = useState(null)
+  }, [mode, document, library, materials, copyReturn])
+  const [selected, setSelected] = useState(draft?.document?.editableOutput || null)
   const [selectedWire, setSelectedWire] = useState(null)
   const [dragging, setDragging] = useState(null)
   const [message, setMessage] = useState(null)
   const [flow, setFlow] = useState(null)
   const [kind, setKind] = useState('')
+  const [pane, setPane] = useState('graph')
+  const processedCopy = useRef(null)
   const [workspace, setWorkspace] = useState(0)
   // React Flow measurements belong to the view, never to the Minecraft document.
   const [nodeMeasurements, setNodeMeasurements] = useState({})
@@ -118,13 +124,14 @@ function Studio({ mode, active }) {
   const [previewShare, setPreviewShare] = useState(45)
   const [previewCollapsed, setPreviewCollapsed] = useState(false)
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
-  const [previewMode, setPreviewMode] = useState('graph')
+  const [previewMode, setPreviewMode] = useState(draft?.document?.editableOutput ? 'selected' : 'graph')
   const [copycatPicker, setCopycatPicker] = useState(null)
   const graphInput = useRef(null)
   const libraryInput = useRef(null)
   const copycatInput = useRef(null)
   const canvas = useRef(null)
   const entries = useMemo(() => inspect(mode, document), [mode, document])
+  const resolved = useMemo(() => hasReferences(document) ? expandReferences(document,library) : null,[document,library])
   const wires = useMemo(() => connections(entries), [entries])
   const current = entries.find(({ node }) => node.id === selected)
   const resultNode = entries.find(({ node }) => ['OUTPUT', 'BUILDING'].includes(node.kind) && !document.graph.nodeGroups?.some(group => group.nodes.includes(node.id)))
@@ -132,7 +139,7 @@ function Studio({ mode, active }) {
   const kinds = mode === 'form' ? model.form.map(type => type.kind).filter(kind => kind !== 'OUTPUT') : model.building.filter(kind => kind !== 'BUILDING')
   const edgeId = ({ target, port }) => `${target}/${port}`
   const nodes = useMemo(() => entries.map(data => ({
-    id: data.node.id, type: 'architect', data: { ...data, hasOutput: data.node.id !== resultNode.node.id, groupName: document.graph.nodeGroups?.find(group => group.nodes.includes(data.node.id))?.name },
+    id: data.node.id, type: 'architect', data: { ...data, editorLabel:document.graph.nodes.find(n=>n.id===data.node.id)?.editorLabel, hasOutput: data.node.id !== resultNode.node.id, groupName: document.graph.nodeGroups?.find(group => group.nodes.includes(data.node.id))?.name },
     position: dragging?.id === data.node.id ? dragging.position : { x: data.node.x, y: data.node.y },
     selected: selectedIds.includes(data.node.id),
     measured: nodeMeasurements[data.node.id]
@@ -171,7 +178,7 @@ function Studio({ mode, active }) {
   const commit = next => {
     inspect(mode, next)
     if (JSON.stringify(next) !== JSON.stringify(document)) {
-      historyContext.current.set(document, { library, materials })
+      historyContext.current.set(document, { library, materials, copyReturn })
       // Reopening the same example must create a distinct history entry.
       history.push(structuredClone(next))
     }
@@ -179,9 +186,9 @@ function Studio({ mode, active }) {
   const travelHistory = direction => {
     const next = direction === 'undo' ? history.past.at(-1) : history.future[0]
     if (!next) return
-    historyContext.current.set(document, { library, materials })
+    historyContext.current.set(document, { library, materials, copyReturn })
     const context = historyContext.current.get(next)
-    if (context) { setLibrary(context.library); setMaterials(context.materials) }
+    if (context) { setLibrary(context.library); setMaterials(context.materials);setCopyReturn(context.copyReturn || null) }
     history[direction]()
   }
   const patchNode = patch => transact(() => {
@@ -207,6 +214,7 @@ function Studio({ mode, active }) {
     }
   }
   const open = raw => {
+    setCopyReturn(null)
     commit(readGraph(raw, mode))
     setSelected(null)
     setSelectedWire(null)
@@ -216,6 +224,7 @@ function Studio({ mode, active }) {
   }
   const add = () => transact(() => {
     if (!kind) return
+    if (mode === 'building' && kind === 'COPYCAT') { chooseCopycat(); return }
     const { left, top, width, height } = canvas.current.getBoundingClientRect()
     const center = flow?.screenToFlowPosition({ x: left + width * 0.5, y: top + height * 0.4 }) ?? { x: 50, y: 50 }
     const id = `node_${crypto.randomUUID().slice(0, 13)}`
@@ -234,7 +243,7 @@ function Studio({ mode, active }) {
   }
   const compatible = ({ source, target, targetHandle }) => {
     const port = entries.find(({ node }) => node.id === target)?.ports.find(port => port.id === targetHandle)
-    const sourceKind = entries.find(({ node }) => node.id === source)?.node.kind
+    const sourceKind = entries.find(({ node }) => node.id === source)?.sourceKind || entries.find(({ node }) => node.id === source)?.node.kind
     return source !== target && Boolean(port?.accepts.includes(sourceKind))
   }
   const importFile = async (event, isLibrary) => {
@@ -268,14 +277,46 @@ function Studio({ mode, active }) {
   const chooseCopycat = nodeId => {
     const node = entries.find(entry => entry.node.id === nodeId)?.node
     const initialId = node?.kind === 'INPUT' ? `base:${node.part.source}` : node?.kind === 'COPYCAT' ? `library:${node.form}` : null
-    setCopycatPicker({ nodeId, initialId, initialCategory: node && node.kind !== 'INPUT' ? 'saved' : 'basic' })
+    setCopycatPicker({ nodeId, initialId, initialCategory: 'all' })
   }
   const applyCopycat = option => {
-    const result = applyCopycatOption({ mode, document, library, materials, nodeId: copycatPicker.nodeId, option })
+    let result
+    if (option.referenceOption) { result = applyReference({ document, library, nodeId: copycatPicker.nodeId, option });result.materials = materials }
+    else {
+      const old = document.graph.nodes.find(n => n.id === copycatPicker.nodeId)
+      const target = old?.kind === 'REFERENCE' ? { ...document, graph:{...document.graph,nodes:document.graph.nodes.map(n => n.id === old.id ? copycatFromReference(old) : n)} } : document
+      result = applyCopycatOption({ mode, document:target, library, materials, nodeId:copycatPicker.nodeId, option })
+      const overrides = old?.referenceOverrides || instanceOverrides(old)
+      if (Object.keys(overrides).length) result.document = editNode(mode,result.document,{...result.document.graph.nodes.find(n=>n.id===result.nodeId),...overrides})
+    }
     commit(result.document)
     setLibrary(result.library); setMaterials(result.materials); setSelected(result.nodeId); setSelectedIds([result.nodeId])
     setSelectedWire(null); setMessage(null)
   }
+  const openSourceCopy = () => transact(() => {
+    const nodeId = visibleNode.node.id
+    const copy = copyNodeSource({mode,document,library,materials,nodeId})
+    if (visibleNode.node.kind === 'COPYCAT' || mode === 'form' && visibleNode.node.kind === 'SAVED') copy.returnTo = {mode,nodeId,entryId:crypto.randomUUID(),previewId:document.editableOutput || (mode==='form' ? document.graph.nodes.find(n=>n.kind==='OUTPUT').id : nodeId),
+      ...(mode==='form' ? {parent:{document:structuredClone(document),library:structuredClone(library),materials:structuredClone(materials),copyReturn}} : {})}
+    onOpenCopy(copy)
+  })
+  useEffect(() => {
+    if (!editorRequest || editorRequest.mode !== mode || processedCopy.current === editorRequest.id) return
+    processedCopy.current = editorRequest.id
+    transact(() => {
+      if (editorRequest.action === 'return') {
+        setSelected(editorRequest.previewId);setPane('graph')
+      } else if (editorRequest.action === 'applyForm') {
+        const parent = editorRequest.parent || {document,library,materials,copyReturn}
+        const result = mode==='building' ? loadBuildingCopycat(parent.document,parent.library,editorRequest.entry,editorRequest.nodeId) : loadFormCopycatWithMaterials(parent.document,editorRequest.entry,editorRequest.nodeId,parent.materials)
+        commit(result.document);setLibrary(result.library || parent.library);setMaterials(result.materials || parent.materials);setCopyReturn(parent.copyReturn || null);setSaveName(result.document.name);setSelected(editorRequest.previewId || result.nodeId);setSelectedIds([result.nodeId]);setPreviewMode('selected');setPane('graph');setWorkspace(key=>key+1)
+      } else {
+        commit(editorRequest.document);setLibrary(editorRequest.library);setMaterials(editorRequest.materials)
+        setSaveName(editorRequest.document.name);setSelected(editorRequest.selected);setSelectedIds([editorRequest.selected]);setSelectedWire(null)
+        setCopyReturn(editorRequest.returnTo || null);setNodeMeasurements({});setWorkspace(key=>key+1);setPane('graph');setPreviewMode('selected')
+      }
+    })
+  },[editorRequest])
   const count = entries.length
   const maxNodes = mode === 'form' ? model.formNodes : model.buildingNodes
   const portLimits = mode === 'form' ? model.form.find(type => type.kind === visibleNode.node.kind)
@@ -287,7 +328,7 @@ function Studio({ mode, active }) {
     try {
       const json = JSON.stringify(writeGraph(mode, document))
       await navigator.clipboard.writeText(json)
-      setMessage({ text: 'Minecraft-JSON kopiert. Im passenden Editor im Spiel importieren.' })
+      setMessage({ text: hasReferences(document) ? 'Graphstudio-JSON mit gespeicherten Referenzversionen kopiert.' : 'Minecraft-JSON kopiert. Im passenden Editor im Spiel importieren.' })
     } catch (error) {
       setMessage({ error: true, text: `JSON konnte nicht kopiert werden: ${error.message || String(error)}. Nutze alternativ JSON exportieren.` })
     }
@@ -304,7 +345,12 @@ function Studio({ mode, active }) {
       removeSelection()
     }
   }
-  return <div className="studio" hidden={!active} onKeyDown={keydown}>
+  return <div className="studio" data-pane={pane} hidden={!active} onKeyDown={keydown}>
+    <div className="studio-navigation">
+      <button onClick={() => chooseCopycat(['INPUT','SAVED','COPYCAT','REFERENCE'].includes(current?.node.kind) ? current.node.id : undefined)}>{mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'}</button>
+      {copyReturn && <><button onClick={() => transact(() => onApplyCopy({action:"applyForm",...copyReturn,entry:{id:copyReturn.entryId,name:document.name,document:writeGraph(mode,document),materials}}))}>{copyReturn.mode === "form" ? "In Formkopie übernehmen" : "In Bauteilkopie übernehmen"}</button><button onClick={() => onApplyCopy(copyReturn.parent ? {...copyReturn.parent,mode:copyReturn.mode,returnTo:copyReturn.parent.copyReturn,selected:copyReturn.previewId} : {action:"return",...copyReturn})}>Zurück ohne Übernahme</button></>}
+      <div className="pane-tabs" role="group" aria-label="Arbeitsansicht">{[['graph','Graph'],['preview','Vorschau'],['inspector','Eigenschaften']].map(([id,label]) => <button key={id} aria-pressed={pane === id} onClick={() => setPane(id)}>{label}</button>)}</div>
+      <details className="studio-tools"><summary>Datei & Bibliothek</summary><PagedPanel label="Werkzeuge" onClose={event => {event.currentTarget.closest("details").open=false}}>
     <div className="toolbar">
       <label className="example-select"><span>BEISPIELE</span><select aria-label="Beispiel öffnen" value="" onChange={e => transact(() => open(examples[mode][Number(e.target.value)][1]))}>
         <option value="" disabled>Beispiel öffnen</option>
@@ -314,7 +360,7 @@ function Studio({ mode, active }) {
         { schema: 3, name: 'Neue Form', parts: [{ source: 'copycats:copycat_slice' }] }))}>Neu</button>
       <button type="button" onClick={() => graphInput.current.click()}>JSON öffnen</button>
       <input hidden ref={graphInput} type="file" accept=".json,application/json" onChange={event => importFile(event, false)} />
-      <button type="button" onClick={() => chooseCopycat(['INPUT', 'SAVED', 'COPYCAT'].includes(current?.node.kind) ? current.node.id : undefined)}>Copycat auswählen</button>
+      <button type="button" onClick={() => chooseCopycat(['INPUT', 'SAVED', 'COPYCAT', 'REFERENCE'].includes(current?.node.kind) ? current.node.id : undefined)}>{mode === 'building' ? 'Referenz auswählen' : 'Copycat auswählen'}</button>
       {mode === 'building' && <>
         <button type="button" onClick={() => copycatInput.current.click()}>Copycat laden</button>
         <input hidden ref={copycatInput} type="file" accept=".json,application/json" onChange={async event => {
@@ -329,7 +375,7 @@ function Studio({ mode, active }) {
         <input hidden ref={libraryInput} type="file" accept=".json,application/json" onChange={event => importFile(event, true)} />
       </>}
       <button type="button" className="primary" onClick={exportFile}>JSON exportieren</button>
-      <button type="button" onClick={copyJson}>Minecraft-JSON kopieren</button>
+      <button type="button" onClick={copyJson}>{hasReferences(document) ? 'Graphstudio-JSON kopieren' : 'Minecraft-JSON kopieren'}</button>
       <span className="toolbar-spacer" />
       <button type="button" aria-label="Rückgängig" title="Rückgängig" disabled={!history.past.length} onClick={() => travelHistory('undo')}>↶</button>
       <button type="button" aria-label="Wiederholen" title="Wiederholen" disabled={!history.future.length} onClick={() => travelHistory('redo')}>↷</button>
@@ -340,29 +386,31 @@ function Studio({ mode, active }) {
       <button onClick={() => transact(() => {
         const name = saveName.trim() || document.name || 'Graph'
         const existing = savedData.graphs.find(entry => entry.mode === mode && entry.name === name)
-        if (!existing && savedData.graphs.length >= 500) throw new Error('Höchstens 500 Graphen speichern. Zuerst nicht mehr benötigte Einträge entfernen.')
-        const entry = { id: existing?.id || crypto.randomUUID(), name, mode, document, library, materials }
+        if (savedData.graphs.length >= 500) throw new Error('Höchstens 500 Graphen speichern. Zuerst nicht mehr benötigte Einträge entfernen.')
+        const entry = { id: crypto.randomUUID(), graphId: existing?.graphId || existing?.id || crypto.randomUUID(), version: Math.max(0,...savedData.graphs.filter(e => e.mode === mode && e.name === name).map(e => e.version || 1)) + 1, name, mode, document, library, materials, output:document.editableOutput }
         updateWorkspace(data => ({ ...data, graphs: [...data.graphs.filter(item => item.id !== entry.id), entry] }))
         setMessage({ text: 'Graph in deiner Browserbibliothek gespeichert.' })
       })}>Graph speichern</button>
       <select aria-label="Gespeicherten Graph öffnen" value="" onChange={event => transact(() => {
         const entry = savedData.graphs.find(entry => entry.id === event.target.value)
         open(entry.document); setLibrary(entry.library || baseLibrary); setMaterials(entry.materials || {})
-      })}><option value="" disabled>Gespeicherte Graphen</option>{savedData.graphs.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select>
+      })}><option value="" disabled>Gespeicherte Graphen</option>{savedData.graphs.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name} · v{entry.version || 1}</option>)}</select>
       <button title="Mit Umschalt mehrere Knoten auswählen" disabled={!selectedIds.length && !current} onClick={() => transact(() => {
         const entry = saveNodeGroup(mode, document, selectedIds.length ? selectedIds : [selected], saveName, materials, library)
         const existing = savedData.nodeGroups.find(item => item.mode === mode && item.name === entry.name)
         if (!existing && savedData.nodeGroups.length >= 500) throw new Error('Höchstens 500 Knotengruppen speichern.')
         if (existing) entry.id = existing.id
+        entry.version = (existing?.version || 0) + 1
         updateWorkspace(data => ({ ...data, nodeGroups: [...data.nodeGroups.filter(item => item.id !== entry.id), entry] }))
       })}>Knotengruppe speichern</button>
       <select aria-label="Knotengruppe einfügen" value="" onChange={event => transact(() => {
         const entry = savedData.nodeGroups.find(entry => entry.id === event.target.value)
         const nextLibrary = mergeLibraries(library, entry.library)
         const inserted = insertNodeGroup(document, entry); commit(inserted.document); setLibrary(nextLibrary); setMaterials(current => ({ ...current, ...inserted.materials })); setWorkspace(key => key + 1)
-      })}><option value="" disabled>Knotengruppe einfügen</option>{savedData.nodeGroups.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select>
+      })}><option value="" disabled>Knotengruppe einfügen</option>{savedData.nodeGroups.filter(entry => entry.mode === mode).map(entry => <option key={entry.id} value={entry.id}>{entry.name} · v{entry.version || 1}</option>)}</select>
     </div>
 
+    </PagedPanel></details></div>
     <div className="workbench" style={{ '--graph-share': `${graphShare}fr`, '--side-share': `${100 - graphShare}fr` }}>
       <section className="canvas-panel" aria-label="Graph bearbeiten">
         <div className="panel-heading graph-heading">
@@ -406,14 +454,14 @@ function Studio({ mode, active }) {
           <div className="panel-heading"><span>Inspektor</span><div className="button-row"><small>{current ? 'AUSWAHL' : 'ERGEBNIS'}</small>
             <button type="button" aria-expanded={!inspectorCollapsed} aria-controls={`${mode}-inspector`} aria-label={inspectorCollapsed ? 'Inspektor ausklappen' : 'Inspektor einklappen'} onClick={() => setInspectorCollapsed(value => !value)}>{inspectorCollapsed ? '▸' : '▾'}</button>
           </div></div>
-          <div id={`${mode}-inspector`} className="inspector-body" hidden={inspectorCollapsed} key={visibleNode.node.id}>
+          <PagedPanel id={`${mode}-inspector`} label="Eigenschaften" className="inspector-body" hidden={inspectorCollapsed} key={visibleNode.node.id}>
             <a className="reference-link" href={`${wiki}/Knoten-${mode === 'form' ? 'Formgraph' : 'Gebaeudegraph'}#${visibleNode.node.kind.toLowerCase()}`}>Knotenreferenz ↗</a>
-            <h2>{visibleNode.node.name || names[visibleNode.node.kind]}</h2>
+            <h2>{document.graph.nodes.find(n=>n.id===visibleNode.node.id)?.editorLabel || visibleNode.node.name || names[visibleNode.node.kind]}</h2>
             <div className="node-id">{visibleNode.node.id} · Ausgang: {visibleNode.outputType || 'Ergebnis'}</div>
             {visibleNode.ports.length > 0 && <details open><summary>Verbindungen</summary>
               {visibleNode.ports.map(port => <Field key={port.id} label={portName(port, visibleNode.node)}
                 value={port.source} options={[[ '', 'Offen' ], ...entries.filter(({ node }) =>
-                  port.accepts.includes(node.kind) && node.id !== visibleNode.node.id)
+                  port.accepts.includes(entries.find(e => e.node.id === node.id)?.sourceKind || node.kind) && node.id !== visibleNode.node.id)
                   .map(({ node }) => [node.id, node.name || `${names[node.kind]} · ${node.id}`])]}
                 onChange={source => setWire(visibleNode.node.id, port.id, source)} />)}
               {portLimits && portLimits.min !== portLimits.max && <div className="button-row">
@@ -425,27 +473,44 @@ function Studio({ mode, active }) {
                   })}>Letzten Eingang entfernen</button>
               </div>}
             </details>}
-            <NodeFields {...{ mode, node: visibleNode.node, document, edit: patchNode, library }}
+            {visibleNode.node.kind === 'REFERENCE' ? <><button onClick={openSourceCopy}>Als Kopie im Graph öffnen/bearbeiten</button><Field label="Knotenname" value={visibleNode.node.name || ''} maxLength={64} onChange={name => patchNode({name})} /><button onClick={() => chooseCopycat(visibleNode.node.id)}>Referenz auswählen …</button><p>{visibleNode.node.reference.id} · Version {visibleNode.node.reference.version}</p>{Object.keys(visibleNode.node.referenceOverrides || {}).length > 0 && <button onClick={() => patchNode({referenceOverrides:{}})}>Instanzeinstellungen zurücksetzen</button>}<p>Ausgang: {visibleNode.outputType}. Die gespeicherte Definition bleibt unverändert.</p><details><summary>Definition dieser Version ansehen</summary><p>{visibleNode.node.reference.document.name || visibleNode.node.name}</p>{visibleNode.node.reference.document.graph.nodes.map(n => <p key={n.id}>{n.name || names[n.kind] || n.kind} · {n.id}</p>)}</details></> : <NodeFields {...{ mode, node: visibleNode.node, document, edit: patchNode, library }}
+              onOpenSourceCopy={openSourceCopy}
               onInspectNode={id => { setSelected(id); setSelectedIds([id]); setSelectedWire(null) }}
               onChooseCopycat={() => chooseCopycat(visibleNode.node.id)}
-              onImportCopycat={() => copycatInput.current.click()} />
+              onImportCopycat={() => copycatInput.current.click()} />}
             {(selectedWire || current && !protectedNode(current.node)) &&
               <button className="danger" type="button" onClick={removeSelection}>{selectedWire ? 'Verbindung trennen' : 'Knoten löschen'}</button>}
-            <NativeDocumentFields {...{ mode, document }} selection={selectedIds} edit={next => transact(() => commit(next))} />
+            <NativeDocumentFields mode={mode} document={resolved?.document || document} managedGroups={resolved?.managedGroups || []} selection={selectedIds.filter(id => !resolved?.owned.has(id))} edit={next => transact(() => commit(resolved ? foldReferenceEdit(document,resolved,next) : next))} />
             <DocumentFields {...{ mode, document, library, materials, setMaterials }} edit={next => transact(() => commit(next))} />
-          </div>
+          </PagedPanel>
         </section>
       </div>
     </div>
     {copycatPicker && <Suspense fallback={<p className="copycat-loading" role="status">Copycat-Auswahl wird geladen …</p>}>
-      <CopycatPicker {...copycatPicker} mode={mode} savedForms={savedForms} library={library}
-        onChoose={applyCopycat} onClose={() => setCopycatPicker(null)} />
+      <CopycatPicker {...copycatPicker} mode={mode} savedForms={savedForms} savedGraphs={savedData.graphs} savedGroups={savedData.nodeGroups} library={library}
+        onChoose={applyCopycat} onOpenCopy={option => onOpenCopy(copyReferenceOption(option))} onClose={() => setCopycatPicker(null)} />
     </Suspense>}
   </div>
 }
 
 function App() {
-  const { openPanel } = useWorkspace()
+  const { openPanel, data, update } = useWorkspace()
+  const [editorRequest, setEditorRequest] = useState(null)
+  const openCopy = copy => {
+    const previous=data.drafts[copy.mode]
+    const unchanged=previous && JSON.stringify(previous.document)===JSON.stringify(examples[copy.mode][0][1])
+    const saved=previous && data.graphs.some(g=>g.mode===copy.mode && JSON.stringify(g.document)===JSON.stringify(previous.document) && JSON.stringify(g.library)===JSON.stringify(previous.library) && JSON.stringify(g.materials)===JSON.stringify(previous.materials))
+    if(previous && !unchanged && !saved) {
+      if(data.graphs.length>=500) throw new Error('Die Graphbibliothek ist voll. Den bisherigen Entwurf zuerst sichern und Platz schaffen.')
+      const id=crypto.randomUUID()
+      update(current=>({...current,graphs:[...current.graphs,{...structuredClone(previous),id,graphId:id,version:1,name:`${(previous.document.name || 'Entwurf').slice(0,42)} · Entwurf vor Kopie`}]}))
+    }
+    const names=new Set([...data.graphs.map(e=>e.name),...Object.values(data.drafts).map(e=>e.document.name)])
+    const base=copy.document.name;let name=base, n=2
+    while(names.has(name)) name=`${base.slice(0,57)} ${n++}`
+    setEditorRequest({...copy,document:{...copy.document,name},id:crypto.randomUUID()});setMode(copy.mode)
+  }
+  const applyCopy = request => {setEditorRequest({...request,id:crypto.randomUUID()});setMode(request.mode)}
   const [mode, setMode] = useState(initialMode)
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -465,8 +530,8 @@ function App() {
       <a href={wiki}>Zum Wiki ↗</a>
     </header>
     <main>
-      <Studio mode="form" active={mode === 'form'} />
-      <Studio mode="building" active={mode === 'building'} />
+      <Studio mode="form" active={mode === 'form'} editorRequest={editorRequest} onOpenCopy={openCopy} onApplyCopy={applyCopy} />
+      <Studio mode="building" active={mode === 'building'} editorRequest={editorRequest} onOpenCopy={openCopy} onApplyCopy={applyCopy} />
     </main>
   </>
 }

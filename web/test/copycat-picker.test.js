@@ -212,3 +212,19 @@ test('worker startup and runtime failures reject every affected request without 
   assert.equal(worker.terminated, true)
   client.dispose()
 })
+
+
+test('reference preview jobs include the selected output and frozen library in their cache key', async () => {
+  const {client,worker}=setup()
+  const {starterBuilding}=await import('../src/generated/engine.mjs')
+  const {readFileSync}=await import('node:fs')
+  const library=JSON.parse(readFileSync(new URL('../../examples/library.json',import.meta.url)))
+  const option={referenceOption:true,document:starterBuilding(),library,output:'wall_copycat'}
+  assert.equal((await compile(client,worker,option)).count,1)
+  assert.equal(worker.messages[0].option.referenceOption,true)
+  assert.equal(worker.messages[0].option.output,'wall_copycat')
+  const wall=await compile(client,worker,{...option,output:'wall'})
+  assert.ok(wall.count>1)
+  assert.equal(worker.messages.length,2)
+  client.dispose()
+})

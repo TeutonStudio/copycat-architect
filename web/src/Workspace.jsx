@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { createMaterials, FAITHFUL, importRepository, materialValue, parseMaterial, stateOptions, defaultProperties } from './materials.js'
 import { emptyWorkspace, resourceCache, saveWorkspace, stored, validateWorkspace } from './storage.js'
+import { PagedPanel } from './PagedPanel.jsx'
 import { readGraph } from './model.js'
 
 const Context = createContext(null)
@@ -38,7 +39,7 @@ export function Workspace({ children }) {
   const update = callback => setData(previous => callback(previous))
   if (!data) return <p className="workspace-status">Gespeicherte Bibliotheken werden geladen …</p>
   return <Context.Provider value={{ data, update, catalog, openPanel: target => { setTab(target); setPanel(true) } }}>
-    <div inert={panel ? true : undefined}>{children}
+    <div className="app-shell" inert={panel ? true : undefined}>{children}
     <div className="workspace-status" role="status">{error || (saved ? 'Im Browser gespeichert' : 'Wird im Browser gespeichert …')}
       {error && <button onClick={() => downloadBackup(data)}>Sicherung exportieren</button>}</div>
     <div className="texture-credit">Minecraft-Texturen: <a href="https://faithfulpack.net" target="_blank" rel="noreferrer">Faithful 64× Java · Faithful Resource Pack</a> · <a href="https://faithfulpack.net/license" target="_blank" rel="noreferrer">Lizenz</a></div></div>
@@ -127,7 +128,7 @@ function LibraryPanel({ tab, setTab, onClose }) {
   }}>
     <div className="library-window"><div className="panel-heading"><h2>Meine Bibliotheken</h2><button onClick={onClose} autoFocus>Schließen</button></div>
       <nav className="library-tabs" aria-label="Bibliothek auswählen">{[['materials', 'Materialien'], ['mods', 'Verlinkte Mods'], ['saved', 'Gespeicherte Inhalte']].map(([id, name]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{name}</button>)}</nav>
-      <div className="library-content">
+      <PagedPanel className="library-content" label="Bibliothek">
         {tab === 'materials' && <><p>{catalog.ids.length} Blöcke. Texturen für Minecraft 1.21.1: <a href={FAITHFUL} target="_blank" rel="noreferrer">Faithful 64× Java</a> von <a href="https://faithfulpack.net" target="_blank" rel="noreferrer">Faithful Resource Pack</a> · <a href="https://faithfulpack.net/license" target="_blank" rel="noreferrer">Lizenz</a>.</p>
           <p className="hint">Materialien im Inspektor einer Copycat-Gruppe oder Gebäuderolle zuweisen. Ob ein Block als Copycat-Material zulässig ist, prüft das Spiel.</p><MaterialPicker /></>}
         {tab === 'mods' && <><p>Öffentliches GitHub-Repository verlinken. Blockstates, Modell-Eltern, Texturen und Mod-Metadaten werden gelesen. Mod-Code wird nicht ausgeführt.</p>
@@ -145,7 +146,7 @@ function LibraryPanel({ tab, setTab, onClose }) {
           <div className="button-row"><button onClick={() => downloadBackup(data)}>Sicherung exportieren</button><button onClick={() => input.current.click()}>Sicherung importieren</button></div>
           <input ref={input} type="file" accept=".json,application/json" hidden onChange={restore} /></>}
         {error && <p role="status" className="error">{error}</p>}
-      </div>
+      </PagedPanel>
     </div>
   </section>
 }

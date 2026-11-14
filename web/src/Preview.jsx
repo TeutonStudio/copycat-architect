@@ -1,3 +1,4 @@
+import { PagedPanel } from './PagedPanel.jsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
@@ -341,29 +342,30 @@ export function Viewer({ plan, blockFrame, catalog, details }) {
     view.bounds = blockFrame && singleBlock ? referenceFrame(view.guides) : bounds
     dispose(view.ground); view.ground.clear(); view.ground.userData.bounds = null
     groundCompass(view.ground, view.bounds)
-    if (!view.fitted) fit()
+    if (!view.fitted || plan && !view.hadGeometry) fit()
+    view.hadGeometry = Boolean(plan)
     view.render()
     return () => { live = false }
   }, [plan, blockFrame, catalog])
 
   const hasDetails = !!details
   return <div className={`viewer-with-sides${hasDetails ? ' has-details' : ''}`}>
-    <aside className="preview-hud preview-hud-left" aria-label="3D-Ansichten">
+    <aside className="preview-hud preview-hud-left" aria-label="3D-Ansichten"><PagedPanel label="Ansichten">
       <div className="preview-sides" role="group" aria-label="Seitenansicht wählen">
         {sides.map(side => <button key={side.id} type="button" aria-pressed={activeSide === side.id}
           aria-label={`Ansicht ${side.label}`} onClick={() => fit(side)}>{side.label}</button>)}
       </div>
       <button type="button" className="fit3d" aria-label="3D einpassen" onClick={() => fit()}>Einpassen</button>
-    </aside>
+    </PagedPanel></aside>
     <div className="viewer" ref={container}>
       {!hasDetails && error && <p className="preview-error" role="status">{error}</p>}
       {!hasDetails && textureWarning && <p className="texture-warning" role="status">{textureWarning}</p>}
     </div>
-    {hasDetails && <aside className="preview-hud preview-hud-right" aria-label="3D-Informationen">
+    {hasDetails && <aside className="preview-hud preview-hud-right" aria-label="3D-Informationen"><PagedPanel label="Details">
       {details}
       {error && <p className="preview-error" role="status">{error}</p>}
       {textureWarning && <p className="texture-warning" role="status">{textureWarning}</p>}
-    </aside>}
+    </PagedPanel></aside>}
   </div>
 }
 

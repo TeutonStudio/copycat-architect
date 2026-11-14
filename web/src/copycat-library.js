@@ -36,7 +36,8 @@ export function loadFormCopycat(document, entry, nodeId) {
 export function loadFormCopycatWithMaterials(document, entry, nodeId, materials = {}) {
   const source = writeGraph('form', readGraph(entry.document, 'form'))
   const result = insertSavedCopycat(document, source, nodeId)
-  const next = replaceNodes({ ...document, groups: result.groups }, result.nodes)
+  const nodes = result.nodes.map(node => node.id===result.nodeId ? {...node,editableGraph:structuredClone(source),editableMaterials:structuredClone(entry.materials || {})} : node)
+  const next = replaceNodes({ ...document, groups: result.groups }, nodes)
   inspect('form', next)
   const nextMaterials = Object.fromEntries(Object.entries(materials)
     .filter(([group, material]) => result.groups.some(item => item.id === group) && material.trim()))
